@@ -8,10 +8,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Kategori extends Model
 {
     protected $table = 'kategori';
+    
     protected $fillable = ['nama_kategori'];
 
     public function alat(): HasMany
     {
-        return $this->hasMany(Alat::class);
+        // Menambahkan parameter foreign key 'kategori_id' dan local key 'id' 
+        // agar relasi dipastikan membaca kolom yang tepat di database
+        return $this->hasMany(Alat::class, 'kategori_id', 'id');
     }
 }
