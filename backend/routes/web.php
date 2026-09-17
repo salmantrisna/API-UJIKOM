@@ -87,11 +87,11 @@ Route::middleware('auth')->group(function () {
         Route::get('/peminjaman', [PetugasController::class, 'indexPeminjaman'])->name('peminjaman.index');
         Route::post('/peminjaman/{id}/setujui', [PetugasController::class, 'setujuiPeminjaman'])->name('peminjaman.setujui');
 
-        // Pengembalian & Denda (Lengkap sesuai modul)
+        // Pengembalian & Denda
         Route::post('/pengembalian/{id}', [PetugasController::class, 'prosesPengembalian'])->name('pengembalian.proses');
         Route::get('/pengembalian', [PetugasController::class, 'indexPengembalian'])->name('pengembalian.index');
 
-        // LAPORAN PETUGAS (DIMASUKKAN KE DALAM GROUP AGAR NAMANYA SESUAI)
+        // LAPORAN PETUGAS
         Route::get('/laporan', [PetugasController::class, 'laporan'])->name('laporan.index');
         Route::get('/laporan/cetak', [PetugasController::class, 'cetakLaporan'])->name('laporan.cetak');
     });
@@ -102,28 +102,13 @@ Route::middleware('auth')->group(function () {
     Route::middleware('role:peminjam')->prefix('peminjam')->name('peminjam.')->group(function () {
         // Katalog & Pengajuan
         Route::get('/katalog', [PeminjamController::class, 'katalogAlat'])->name('katalog');
+        
+        // Menampung berbagai variasi nama route pemanggilan form action agar tidak error
+        Route::post('/ajukan-peminjaman', [PeminjamController::class, 'ajukanPeminjaman'])->name('ajukan');
         Route::post('/peminjaman/ajukan', [PeminjamController::class, 'ajukanPeminjaman'])->name('peminjaman.ajukan');
+        
         Route::get('/riwayat', [PeminjamController::class, 'riwayatPeminjaman'])->name('riwayat');
+        Route::post('/pengembalian/{id}', [PeminjamController::class, 'ajukanPengembalian'])->name('pengembalian');
     });
-
-    Route::middleware(['auth', 'role:peminjam'])->prefix('peminjam')->name('peminjam.')->group(function () {
-    Route::get('/katalog', [PeminjamController::class, 'katalogAlat'])->name('katalog');
-    
-    // Tambahkan baris route ini untuk menangani form action peminjaman:
-    Route::post('/ajukan-peminjaman', [PeminjamController::class, 'ajukanPeminjaman'])->name('ajukan');
-    
-    Route::get('/riwayat', [PeminjamController::class, 'riwayatPeminjaman'])->name('riwayat');
-    Route::post('/pengembalian/{id}', [PeminjamController::class, 'ajukanPengembalian'])->name('pengembalian');
-});
-
-Route::middleware(['auth', 'role:peminjam'])->prefix('peminjam')->name('peminjam.')->group(function () {
-    Route::get('/katalog', [PeminjamController::class, 'katalogAlat'])->name('katalog');
-    
-    // Ubah/tambahkan route ini agar sesuai dengan peminjam.peminjaman.ajukan
-    Route::post('/ajukan-peminjaman', [PeminjamController::class, 'ajukanPeminjaman'])->name('peminjaman.ajukan');
-    
-    Route::get('/riwayat', [PeminjamController::class, 'riwayatPeminjaman'])->name('riwayat');
-    Route::post('/pengembalian/{id}', [PeminjamController::class, 'ajukanPengembalian'])->name('pengembalian');
-});
 
 });
