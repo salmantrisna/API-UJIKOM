@@ -1,169 +1,86 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Riwayat Peminjaman - Panel Peminjam</title>
-    <!-- Bootstrap 5 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Google Fonts Inter -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f8f9fa; overflow-x: hidden; }
-        /* Sidebar Styling ala Panel Petugas */
-        .sidebar {
-            width: 260px;
-            min-height: 100vh;
-            background-color: #111c2e;
-            color: #fff;
-            position: fixed;
-            top: 0;
-            left: 0;
-            z-index: 100;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-        }
-        .sidebar .brand-box {
-            padding: 24px 20px;
-            font-weight: 700;
-            font-size: 1.1rem;
-            letter-spacing: 0.5px;
-            border-bottom: 1px solid rgba(255,255,255,0.08);
-        }
-        .sidebar .nav-link {
-            color: #a0aec0;
-            padding: 12px 20px;
-            font-weight: 500;
-            transition: all 0.2s ease;
-        }
-        .sidebar .nav-link:hover, .sidebar .nav-link.active {
-            color: #fff;
-            background-color: rgba(255,255,255,0.08);
-            border-left: 4px solid #3182ce;
-        }
-        .sidebar .user-box {
-            padding: 20px;
-            border-top: 1px solid rgba(255,255,255,0.08);
-            font-size: 0.85rem;
-            color: #a0aec0;
-        }
-        /* Main Content Wrapper */
-        .main-content {
-            margin-left: 260px;
-            padding: 30px;
-        }
-        .top-navbar {
-            background: #fff;
-            padding: 15px 30px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-left: 260px;
-        }
-        .card { border: none; border-radius: 10px; box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.05); }
-        .table th { background-color: #f8f9fa; font-weight: 600; color: #495057; }
-        .table td { vertical-align: middle; }
-    </style>
-</head>
-<body>
+@extends('layouts.app')
 
-    <!-- Sidebar -->
-    <div class="sidebar">
-        <div>
-            <div class="brand-box text-uppercase">
-                📦 PANEL PEMINJAM
-            </div>
-            <div class="nav flex-column py-3">
-                <a href="{{ route('peminjam.katalog') }}" class="nav-link">Katalog Alat</a>
-                <a href="{{ route('peminjam.riwayat') }}" class="nav-link active">Riwayat Peminjaman</a>
-            </div>
+@section('title', 'Riwayat Peminjaman - Peminjam')
+@section('header-title', 'Riwayat & Pengembalian Alat')
+
+@section('content')
+    @if(session('success'))
+        <div class="mb-4 bg-emerald-50 border border-emerald-200 text-emerald-800 p-4 rounded-xl shadow-sm text-sm">
+            {{ session('success') }}
         </div>
-        <div class="user-box">
-            <div class="text-white fw-semibold mb-1">{{ Auth::user()->name ?? 'Peminjam' }}</div>
-            <div>ROLE: PEMINJAM</div>
+    @endif
+    @if(session('error'))
+        <div class="mb-4 bg-red-50 border border-red-200 text-red-800 p-4 rounded-xl shadow-sm text-sm">
+            {{ session('error') }}
         </div>
-    </div>
+    @endif
 
-    <!-- Top Navbar -->
-    <div class="top-navbar">
-        <h5 class="fw-bold text-dark m-0">Riwayat Peminjaman Alat Anda</h5>
-        <form action="{{ route('logout') }}" method="POST" class="d-inline">
-            @csrf
-            <button type="submit" class="btn btn-danger btn-sm px-3 fw-semibold">Logout</button>
-        </form>
-    </div>
+    <div class="space-y-4">
+        @forelse($peminjamans as $item)
+            @php
+                $badge = match($item->status) {
+                    'diajukan' => ['bg-yellow-100 text-yellow-700', 'Menunggu Persetujuan'],
+                    'dipinjam' => ['bg-blue-100 text-blue-700', 'Sedang Dipinjam'],
+                    'telat' => ['bg-red-100 text-red-700', 'Telat Dikembalikan'],
+                    'dikembalikan' => ['bg-purple-100 text-purple-700', 'Menunggu Verifikasi'],
+                    'selesai' => ['bg-emerald-100 text-emerald-700', 'Selesai'],
+                    default => ['bg-gray-100 text-gray-700', ucfirst($item->status)],
+                };
+            @endphp
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+                <div class="p-5">
+                    <div class="flex items-start justify-between mb-4">
+                        <div>
+                            <p class="text-xs text-gray-500">Peminjaman #{{ $item->id }}</p>
+                            <p class="font-bold text-gray-900">{{ $item->tgl_pinjam->format('d-m-Y') }} — {{ $item->tgl_kembali_plan->format('d-m-Y') }}</p>
+                        </div>
+                        <span class="text-xs font-semibold px-2.5 py-1 rounded-full {{ $badge[0] }} flex-shrink-0">
+                            {{ $badge[1] }}
+                        </span>
+                    </div>
 
-    <!-- Main Content -->
-    <div class="main-content">
-        @if(session('success'))
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                {{ session('success') }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        @endif
-        @if(session('error'))
-            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                {{ session('error') }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        @endif
+                    <div class="mb-4">
+                        <p class="text-xs text-gray-500 mb-2 font-medium uppercase tracking-wide">Alat Dipinjam</p>
+                        <div class="flex flex-wrap gap-2">
+                            @foreach($item->detailPinjam as $detail)
+                                <span class="inline-flex items-center gap-1 bg-blue-50 text-blue-700 text-xs font-medium px-2.5 py-1.5 rounded-lg">
+                                    {{ $detail->alat->nama_alat ?? 'Alat Dihapus' }}
+                                    <span class="text-blue-400">×{{ $detail->jumlah }}</span>
+                                </span>
+                            @endforeach
+                        </div>
+                    </div>
 
-        <div class="card">
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead>
-                            <tr>
-                                <th class="text-center" width="60">No</th>
-                                <th>Tanggal Pinjam</th>
-                                <th>Rencana Kembali</th>
-                                <th>Daftar Alat & Jumlah</th>
-                                <th class="text-center">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse($peminjamans as $index => $peminjaman)
-                                <tr>
-                                    <td class="text-center">{{ $index + 1 }}</td>
-                                    <td>{{ \Carbon\Carbon::parse($peminjaman->tgl_pinjam)->translatedFormat('d M Y') }}</td>
-                                    <td>{{ \Carbon\Carbon::parse($peminjaman->tgl_kembali_plan)->translatedFormat('d M Y') }}</td>
-                                    <td>
-                                        <ul class="mb-0 ps-3">
-                                            @foreach($peminjaman->detailPinjams as $detail)
-                                                <li>
-                                                    <span class="fw-semibold">{{ $detail->alat->nama_alat ?? 'Alat tidak ditemukan' }}</span> 
-                                                    <span class="text-muted">({{ $detail->jumlah }} unit)</span>
-                                                </li>
-                                            @endforeach
-                                        </ul>
-                                    </td>
-                                    <td class="text-center">
-                                        @if($peminjaman->status == 'diajukan')
-                                            <span class="badge bg-warning text-dark px-2 py-1">Diajukan</span>
-                                        @elseif($peminjaman->status == 'disetujui')
-                                            <span class="badge bg-success px-2 py-1">Disetujui</span>
-                                        @elseif($peminjaman->status == 'ditolak')
-                                            <span class="badge bg-danger px-2 py-1">Ditolak</span>
-                                        @else
-                                            <span class="badge bg-secondary px-2 py-1">{{ ucfirst($peminjaman->status) }}</span>
-                                        @endif
-                                    </td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="5" class="text-center py-4 text-muted">Belum ada riwayat peminjaman alat.</td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
+                    @if($item->pengembalian)
+                        <div class="bg-gray-50 rounded-lg p-3 mb-4 text-sm flex justify-between">
+                            <span class="text-gray-600">Denda</span>
+                            <span class="font-semibold text-gray-900">Rp {{ number_format($item->pengembalian->denda, 0, ',', '.') }}</span>
+                        </div>
+                    @endif
+
+                    @if(in_array($item->status, ['dipinjam', 'telat']))
+                        <form action="{{ route('peminjam.riwayat.ajukanPengembalian', $item->id) }}" method="POST">
+                            @csrf
+                            <button type="submit" onclick="return confirm('Ajukan pengembalian alat ini? Pastikan alat sudah kamu serahkan ke petugas.')"
+                                class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-xl text-sm font-semibold transition shadow-sm flex items-center justify-center gap-2">
+                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                </svg>
+                                Ajukan Pengembalian
+                            </button>
+                        </form>
+                    @elseif($item->status === 'dikembalikan')
+                        <p class="text-center text-xs text-purple-600 font-medium bg-purple-50 py-2 rounded-lg">
+                            Menunggu verifikasi petugas
+                        </p>
+                    @endif
                 </div>
             </div>
-        </div>
+        @empty
+            <div class="bg-white rounded-2xl border border-dashed border-gray-300 py-16 text-center">
+                <p class="text-gray-500 font-medium">Kamu belum pernah meminjam alat</p>
+                <a href="{{ route('peminjam.katalog') }}" class="text-emerald-600 text-sm font-semibold hover:underline mt-2 inline-block">Lihat Katalog Alat →</a>
+            </div>
+        @endforelse
     </div>
-
-    <!-- Bootstrap 5 JS -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+@endsection

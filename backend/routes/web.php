@@ -109,6 +109,9 @@ Route::middleware('auth')->group(function () {
         
         Route::get('/riwayat', [PeminjamController::class, 'riwayatPeminjaman'])->name('riwayat');
         Route::post('/pengembalian/{id}', [PeminjamController::class, 'ajukanPengembalian'])->name('pengembalian');
+        
+        // Route yang dicari oleh view riwayat.blade.php
+        Route::post('/riwayat/ajukan-pengembalian/{id}', [PeminjamController::class, 'ajukanPengembalian'])->name('riwayat.ajukanPengembalian');
     });
 
 });

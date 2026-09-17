@@ -18,7 +18,7 @@
                     @elseif(auth()->user()->role === 'petugas')
                         PANEL PETUGAS
                     @else
-                        PANEL USER
+                        PANEL PEMINJAM
                     @endif
                 </div>
                 
@@ -55,6 +55,16 @@
                         </a>
                         <a href="{{ route('petugas.laporan.index') }}" class="block px-4 py-2 rounded-lg transition {{ request()->routeIs('petugas.laporan*') ? 'text-white font-medium shadow' : 'text-gray-400 hover:text-white' }}" style="{{ request()->routeIs('petugas.laporan*') ? 'background-color: #1e293b;' : '' }}">
                             Cetak Laporan
+                        </a>
+                    @endif
+
+                    <!-- ================= MENU PEMINJAM ================= -->
+                    @if(auth()->user()->role !== 'admin' && auth()->user()->role !== 'petugas')
+                        <a href="{{ route('peminjam.katalog') }}" class="block px-4 py-2 rounded-lg transition {{ request()->routeIs('peminjam.katalog*') ? 'text-white font-medium shadow' : 'text-gray-400 hover:text-white' }}" style="{{ request()->routeIs('peminjam.katalog*') ? 'background-color: #1e293b;' : '' }}">
+                            Katalog Alat
+                        </a>
+                        <a href="{{ route('peminjam.riwayat') }}" class="block px-4 py-2 rounded-lg transition {{ request()->routeIs('peminjam.riwayat*') ? 'text-white font-medium shadow' : 'text-gray-400 hover:text-white' }}" style="{{ request()->routeIs('peminjam.riwayat*') ? 'background-color: #1e293b;' : '' }}">
+                            Riwayat & Pengembalian
                         </a>
                     @endif
                 </nav>
