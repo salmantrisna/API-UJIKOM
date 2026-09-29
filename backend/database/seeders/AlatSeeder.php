@@ -16,15 +16,15 @@ class AlatSeeder extends Seeder
                 'stok' => 15,
                 'status_kondisi' => 'Baik',
                 'deskripsi' => 'Router nirkabel rumahan yang cocok untuk praktik jaringan dasar.',
-                'gambar' => 'mikrotik_rb941.jpg',
+                'gambar' => 'alat/mikrotik_rb941.jpg',
             ],
             [
                 'kategori_id' => 2,
-                'nama_alat' => 'Kamera DSLR Canon EOS 3000D',
+                'nama_alat' => 'alat/Kamera DSLR Canon EOS 3000D',
                 'stok' => 5,
                 'status_kondisi' => 'Baik',
                 'deskripsi' => 'Kamera pemula untuk kebutuhan dokumentasi dan pembuatan aset media.',
-                'gambar' => 'canon_3000d.jpg',
+                'gambar' => 'alat/canon_3000d.jpg',
             ],
             [
                 'kategori_id' => 3,
@@ -32,7 +32,7 @@ class AlatSeeder extends Seeder
                 'stok' => 8,
                 'status_kondisi' => 'Baik',
                 'deskripsi' => 'Perangkat komputasi ringkas untuk server lokal skala kecil.',
-                'gambar' => 'intel_nuc.jpg',
+                'gambar' => 'alat/intel_nuc.jpg',
             ],
             [
                 'kategori_id' => 4,
@@ -40,7 +40,7 @@ class AlatSeeder extends Seeder
                 'stok' => 20,
                 'status_kondisi' => 'Baik',
                 'deskripsi' => 'Alat potong dan pasang konektor kabel UTP.',
-                'gambar' => 'crimping_proskit.jpg',
+                'gambar' => 'alat/rimping_proskit.jpg',
             ],
             [
                 'kategori_id' => 5,
@@ -48,7 +48,7 @@ class AlatSeeder extends Seeder
                 'stok' => 25,
                 'status_kondisi' => 'Baik',
                 'deskripsi' => 'Konverter display untuk menyambungkan perangkat modern ke proyektor lama.',
-                'gambar' => 'hdmi_vga.jpg',
+                'gambar' => 'alat/hdmi_vga.jpg',
             ],
         ];
 

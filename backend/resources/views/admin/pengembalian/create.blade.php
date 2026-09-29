@@ -3,40 +3,66 @@
 @section('content')
 <div class="space-y-4 max-w-4xl mx-auto">
     <div class="bg-white rounded-xl shadow-sm p-6">
-        <h2 class="text-xl font-bold text-gray-800 mb-6">Tambah / Proses Pengembalian Alat</h2>
+        <h2 class="text-xl font-bold text-gray-800 mb-6">Proses Pengembalian</h2>
 
-        <form action="{{ route('admin.pengembalian.store') }}" method="POST" class="space-y-5">
-            @csrf
+        @php
+            $plan = \Carbon\Carbon::parse($peminjaman->tgl_kembali_plan)->startOfDay();
+            $now = \Carbon\Carbon::now()->startOfDay();
+            $hariTelat = $now->greaterThan($plan) ? $plan->diffInDays($now) : 0;
+            $dendaOtomatis = $hariTelat * 5000;
+        @endphp
 
-            <!-- Pilih / Info Peminjaman -->
+        <!-- Info Peminjaman -->
+        <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-5 space-y-3">
             <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-1">Pilih Transaksi Peminjaman</label>
-                <select name="peminjaman_id" class="border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-800 w-full" required>
-                    <option value="">-- Pilih Peminjam / Alat --</option>
-                    @foreach($peminjamans ?? [] as $p)
-                        <option value="{{ $p->id }}">
-                            {{ $p->user->name ?? 'User' }} - ({{ \Carbon\Carbon::parse($p->tgl_pinjam)->format('d-m-Y') }})
-                        </option>
+                <p class="text-xs text-gray-500">Peminjam</p>
+                <p class="font-semibold text-gray-800">{{ $peminjaman->user->name ?? 'User Tidak Ditemukan' }}</p>
+            </div>
+            <div>
+                <p class="text-xs text-gray-500">Batas Waktu Kembali</p>
+                <p class="font-semibold text-gray-800">{{ $plan->format('d/m/Y') }}</p>
+            </div>
+            <div>
+                <p class="text-xs text-gray-500">Alat yang Dipinjam</p>
+                <ul class="list-disc list-inside text-sm text-gray-800 mt-1">
+                    @foreach($peminjaman->detailPinjam as $detail)
+                        <li>{{ $detail->alat->nama_alat ?? 'Alat Dihapus' }} — {{ $detail->jumlah }} pcs</li>
                     @endforeach
-                </select>
+                </ul>
             </div>
+        </div>
 
-            <!-- Nama yang Mengembalikan / Petugas -->
-            <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-1">Nama Pengembali / Penerima</label>
-                <input type="text" name="nama_pengembali" class="border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-800 w-full" placeholder="Masukkan nama yang mengembalikan..." required>
-            </div>
+        <form action="{{ route('admin.pengembalian.store', $peminjaman->id) }}" method="POST" class="space-y-5">
+            @csrf
 
             <!-- Tanggal Pengembalian -->
             <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-1">Tanggal Pengembalian</label>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Tanggal Kembali</label>
                 <input type="date" name="tgl_kembali" class="border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-800 w-full" value="{{ date('Y-m-d') }}" required>
             </div>
 
-            <!-- Denda -->
+            <!-- Kondisi Alat -->
             <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-1">Denda (Jika ada)</label>
-                <input type="number" name="denda" class="border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-800 w-full" placeholder="0" value="0">
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Kondisi Alat</label>
+                <select name="kondisi_kembali" class="border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-800 w-full" required>
+                    <option value="Baik">Baik</option>
+                    <option value="Rusak Ringan">Rusak Ringan</option>
+                    <option value="Rusak Berat">Rusak Berat</option>
+                </select>
+            </div>
+
+            <!-- Denda (otomatis, read-only) -->
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-1">Denda (Rp)</label>
+                <input type="text" value="Rp {{ number_format($dendaOtomatis, 0, ',', '.') }}" readonly
+                    class="border border-gray-300 rounded-lg px-4 py-2 text-sm w-full bg-gray-100 text-gray-700 cursor-not-allowed">
+                <p class="text-xs text-gray-500 mt-1">
+                    @if($hariTelat > 0)
+                        Terlambat {{ $hariTelat }} hari dari batas waktu. Denda dihitung otomatis.
+                    @else
+                        Tidak ada keterlambatan.
+                    @endif
+                </p>
             </div>
 
             <!-- Tombol Aksi -->
@@ -45,7 +71,7 @@
                     Batal
                 </a>
                 <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-5 py-2 rounded-lg transition">
-                    Simpan
+                    Simpan Pengembalian
                 </button>
             </div>
         </form>

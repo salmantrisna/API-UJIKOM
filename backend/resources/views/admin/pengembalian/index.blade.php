@@ -1,105 +1,143 @@
 @extends('layouts.app')
 
+@section('header-title', 'Data Transaksi Pengembalian')
+
 @section('content')
-<div class="space-y-4">
+<div class="space-y-5">
+
     @if(session('success'))
-        <div class="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-md relative" role="alert">
-            <span class="block sm:inline">{{ session('success') }}</span>
+        <div class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm" style="background:#dcfce7; color:#166534;">
+            <svg class="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>
+            {{ session('success') }}
         </div>
     @endif
 
-    <div class="bg-white rounded-xl shadow-sm p-6">
-        <!-- Header & Search Bar -->
-        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-            <h2 class="text-xl font-bold text-gray-800">Data Transaksi Pengembalian</h2>
-            
-            <!-- Tombol Tambah & Search Bar -->
-            <div class="flex flex-col sm:flex-row items-center gap-3">
-                <a href="{{ route('admin.pengembalian.create') }}" class="w-full sm:w-auto text-center bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition shadow-sm">
-                    + Proses Pengembalian
-                </a>
-                <form action="{{ route('admin.pengembalian.index') }}" method="GET" class="flex gap-2 w-full sm:w-auto">
-                    <input type="text" name="search" class="border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-800 w-64" placeholder="Cari nama peminjam..." value="{{ request('search') }}">
-                    <button type="submit" class="bg-slate-800 hover:bg-slate-900 text-white text-sm font-semibold px-4 py-2 rounded-lg transition">
-                        Cari
-                    </button>
-                </form>
-            </div>
+    <!-- Header + Search + Tambah -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+            <h2 class="text-xl font-bold text-gray-900">Data Transaksi Pengembalian</h2>
+            <p class="text-sm text-gray-400">{{ $peminjamans->total() ?? $peminjamans->count() }} transaksi tercatat</p>
         </div>
 
-        <!-- Tabel Data -->
+        <div class="flex items-center gap-3 w-full md:w-auto">
+            <form action="{{ route('admin.pengembalian.index') }}" method="GET" class="flex items-center gap-2 w-full md:w-80 rounded-full px-4 py-2 bg-white border border-gray-200 shadow-sm">
+                <svg class="w-4 h-4 text-gray-400 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari nama peminjam..."
+                    class="w-full text-sm bg-transparent focus:outline-none text-gray-700">
+                @if(request('search'))
+                    <a href="{{ route('admin.pengembalian.index') }}" class="text-gray-400 hover:text-gray-600 flex-shrink-0">
+                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                    </a>
+                @endif
+            </form>
+
+            <a href="{{ route('admin.pengembalian.create') }}"
+                class="flex items-center gap-2 text-white text-sm font-semibold px-4 py-2.5 rounded-full transition whitespace-nowrap flex-shrink-0"
+                style="background:#0f1729;">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+                Proses Pengembalian
+            </a>
+        </div>
+    </div>
+
+    <!-- Tabel -->
+    <div class="rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden">
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse">
                 <thead>
-                    <tr class="border-b border-gray-200 text-xs font-bold text-gray-700 uppercase tracking-wider">
-                        <th class="py-3 px-4">NO</th>
-                        <th class="py-3 px-4">NAMA PEMINJAM</th>
-                        <th class="py-3 px-4">DAFTAR ALAT</th>
-                        <th class="py-3 px-4">TGL PINJAM</th>
-                        <th class="py-3 px-4">RENCANA KEMBALI</th>
-                        <th class="py-3 px-4">DENDA</th>
-                        <th class="py-3 px-4">PETUGAS</th>
-                        <th class="py-3 px-4 text-center">STATUS</th>
-                        <th class="py-3 px-4 text-center">AKSI</th>
+                    <tr class="text-[11px] uppercase tracking-wider text-gray-400" style="background:#f9fafb; border-bottom:1px solid #f0f0f0;">
+                        <th class="py-3 px-5 font-semibold">Peminjam</th>
+                        <th class="py-3 px-5 font-semibold">Daftar Alat</th>
+                        <th class="py-3 px-5 font-semibold">Tanggal</th>
+                        <th class="py-3 px-5 font-semibold">Denda</th>
+                        <th class="py-3 px-5 font-semibold">Petugas</th>
+                        <th class="py-3 px-5 font-semibold">Status</th>
+                        <th class="py-3 px-5 font-semibold text-right">Aksi</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-100 text-sm">
-                    @forelse($peminjamans as $key => $peminjaman)
-                        <tr class="hover:bg-gray-50 transition">
-                            <td class="py-3 px-4 font-medium text-gray-600">{{ $peminjamans->firstItem() + $key }}</td>
-                            <td class="py-3 px-4 font-bold text-gray-800">{{ $peminjaman->user->name ?? 'User Tidak Ditemukan' }}</td>
-                            <td class="py-3 px-4">
+                <tbody class="text-sm">
+                    @forelse($peminjamans as $peminjaman)
+                        @php
+                            $statusLower = strtolower($peminjaman->status);
+
+                            if (in_array($statusLower, ['dikembalikan', 'selesai']) && $peminjaman->pengembalian) {
+                                $denda = $peminjaman->pengembalian->denda ?? 0;
+                            } else {
+                                $denda = 0;
+                                if (in_array($statusLower, ['dipinjam', 'telat'])) {
+                                    $plan = \Carbon\Carbon::parse($peminjaman->tgl_kembali_plan)->startOfDay();
+                                    $now = \Carbon\Carbon::now()->startOfDay();
+                                    if ($now->greaterThan($plan)) {
+                                        $denda = $plan->diffInDays($now) * 5000;
+                                    }
+                                }
+                            }
+
+                            if ($statusLower == 'dipinjam') {
+                                $badgeBg = '#dcfce7'; $badgeColor = '#166534'; $badgeText = 'Dipinjam';
+                            } elseif (in_array($statusLower, ['selesai', 'dikembalikan'])) {
+                                $badgeBg = '#dbeafe'; $badgeColor = '#2563eb'; $badgeText = 'Dikembalikan';
+                            } elseif ($statusLower == 'telat') {
+                                $badgeBg = '#fee2e2'; $badgeColor = '#dc2626'; $badgeText = 'Telat';
+                            } else {
+                                $badgeBg = '#f3f4f6'; $badgeColor = '#4b5563'; $badgeText = ucfirst($peminjaman->status);
+                            }
+                        @endphp
+                        <tr class="hover:bg-gray-50 transition" style="border-bottom:1px solid #f3f4f6;">
+                            <td class="py-4 px-5 align-top">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-white text-xs font-bold" style="background:#0f1729;">
+                                        {{ strtoupper(substr($peminjaman->user->name ?? 'U', 0, 1)) }}
+                                    </div>
+                                    <span class="font-semibold text-gray-900">{{ $peminjaman->user->name ?? 'User Tidak Ditemukan' }}</span>
+                                </div>
+                            </td>
+
+                            <td class="py-4 px-5 align-top text-gray-600">
                                 <ul class="space-y-1">
                                     @foreach($peminjaman->detailPinjam as $detail)
-                                        <span class="text-gray-700 block">
-                                            • {{ $detail->alat->nama_alat ?? 'Alat Dihapus' }} <span class="font-bold">({{ $detail->jumlah }})</span>
-                                        </span>
+                                        <li class="flex items-center gap-1.5">
+                                            <span class="w-1 h-1 rounded-full bg-gray-300 flex-shrink-0"></span>
+                                            <span class="font-medium text-gray-800">{{ $detail->alat->nama_alat ?? 'Alat Dihapus' }}</span>
+                                            <span class="text-xs text-gray-400">({{ $detail->jumlah }})</span>
+                                        </li>
                                     @endforeach
                                 </ul>
                             </td>
-                            <td class="py-3 px-4 text-gray-600 whitespace-nowrap">{{ \Carbon\Carbon::parse($peminjaman->tgl_pinjam)->format('Y-m-d') }}</td>
-                            <td class="py-3 px-4 text-gray-600 whitespace-nowrap">{{ \Carbon\Carbon::parse($peminjaman->tgl_kembali_plan)->format('Y-m-d') }}</td>
-                            <td class="py-3 px-4 font-semibold whitespace-nowrap">
-                                @php
-                                    $denda = $peminjaman->denda ?? 0;
-                                    $statusLower = strtolower($peminjaman->status);
-                                    if($denda == 0 && in_array($statusLower, ['dipinjam', 'telat'])) {
-                                        $plan = \Carbon\Carbon::parse($peminjaman->tgl_kembali_plan);
-                                        $now = \Carbon\Carbon::now();
-                                        if($now->greaterThan($plan)) {
-                                            $daysLate = $plan->diffInDays($now);
-                                            $denda = $daysLate * 5000;
-                                        }
-                                    }
-                                @endphp
-                                <span class="{{ $denda > 0 ? 'text-red-600' : 'text-gray-600' }}">
-                                    {{ $denda > 0 ? 'Rp ' . number_format($denda, 0, ',', '.') : 'Rp 0' }}
+
+                            <td class="py-4 px-5 align-top text-xs text-gray-500 whitespace-nowrap">
+                                <div><span class="text-gray-400">Pinjam:</span> {{ \Carbon\Carbon::parse($peminjaman->tgl_pinjam)->format('d M Y') }}</div>
+                                <div><span class="text-gray-400">Rencana:</span> {{ \Carbon\Carbon::parse($peminjaman->tgl_kembali_plan)->format('d M Y') }}</div>
+                            </td>
+
+                            <td class="py-4 px-5 align-top">
+                                <span class="text-sm font-semibold" style="color:{{ $denda > 0 ? '#dc2626' : '#9ca3af' }};">
+                                    Rp {{ number_format($denda, 0, ',', '.') }}
                                 </span>
                             </td>
-                            <td class="py-3 px-4 text-gray-600">
+
+                            <td class="py-4 px-5 align-top text-gray-600">
                                 {{ $peminjaman->petugas->name ?? 'Admin' }}
                             </td>
-                            <td class="py-3 px-4 text-center">
-                                @if($statusLower == 'dipinjam')
-                                    <span class="inline-block bg-green-100 text-green-700 font-semibold text-xs px-3 py-1 rounded-full">Dipinjam</span>
-                                @elseif(in_array($statusLower, ['selesai', 'dikembalikan']))
-                                    <span class="inline-block bg-blue-100 text-blue-700 font-semibold text-xs px-3 py-1 rounded-full">Dikembalikan</span>
-                                @elseif($statusLower == 'telat')
-                                    <span class="inline-block bg-red-100 text-red-700 font-semibold text-xs px-3 py-1 rounded-full">Telat</span>
-                                @else
-                                    <span class="inline-block bg-gray-100 text-gray-700 font-semibold text-xs px-3 py-1 rounded-full">{{ ucfirst($peminjaman->status) }}</span>
-                                @endif
+
+                            <td class="py-4 px-5 align-top">
+                                <span class="px-2.5 py-1 text-[11px] font-semibold rounded-full" style="background:{{ $badgeBg }}; color:{{ $badgeColor }};">
+                                    {{ $badgeText }}
+                                </span>
                             </td>
-                            <td class="py-3 px-4 text-center">
-                                <div class="flex flex-col items-center justify-center gap-1.5">
-                                    <a href="{{ route('admin.pengembalian.edit', $peminjaman->id) }}" class="bg-amber-500 hover:bg-amber-600 text-white font-semibold text-xs px-4 py-1 rounded-md transition shadow-sm w-20 text-center">
-                                        Edit
+
+                            <td class="py-4 px-5 align-top">
+                                <div class="flex items-center justify-end gap-2">
+                                    <a href="{{ route('admin.pengembalian.edit', $peminjaman->id) }}"
+                                        class="w-8 h-8 flex items-center justify-center rounded-full transition"
+                                        style="background:#fef3c7; color:#b45309;" title="Edit">
+                                        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
                                     </a>
-                                    <form action="{{ route('admin.pengembalian.destroy', $peminjaman->id) }}" method="POST" onsubmit="return confirm('Yakin ingin menghapus data ini?')" class="w-20">
+                                    <form action="{{ route('admin.pengembalian.destroy', $peminjaman->id) }}" method="POST" onsubmit="return confirm('Yakin ingin menghapus data ini?')">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="bg-red-600 hover:bg-red-700 text-white font-semibold text-xs px-4 py-1 rounded-md transition shadow-sm w-full">
-                                            Hapus
+                                        <button type="submit" class="w-8 h-8 flex items-center justify-center rounded-full transition" style="background:#fee2e2; color:#dc2626;" title="Hapus">
+                                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg>
                                         </button>
                                     </form>
                                 </div>
@@ -107,17 +145,19 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="9" class="py-6 text-center text-gray-500 italic">Tidak ada data transaksi pengembalian.</td>
+                            <td colspan="7" class="py-10 text-center text-gray-400 text-sm">Tidak ada data transaksi pengembalian.</td>
                         </tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
 
-        <!-- Pagination -->
-        <div class="mt-4">
-            {{ $peminjamans->links() }}
-        </div>
+        @if($peminjamans->hasPages())
+            <div class="px-5 py-4" style="border-top:1px solid #f3f4f6;">
+                {{ $peminjamans->links() }}
+            </div>
+        @endif
     </div>
+
 </div>
 @endsection

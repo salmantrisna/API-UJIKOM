@@ -1,91 +1,105 @@
 @extends('layouts.app')
 
 @section('content')
-<div style="padding: 20px; font-family: Arial, sans-serif;">
-    
-    <!-- Welcome Alert -->
-    <div style="background-color: #d1e7dd; color: #0f5132; padding: 15px 20px; border-radius: 8px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #badbcc;">
+<div class="space-y-5">
+
+        <!-- Header row -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <div>
-            ✅ Selamat datang, <strong>{{ Auth::user()->name ?? 'Bagus Karim' }}</strong>! Anda login sebagai hak akses <span style="background-color: #212529; color: white; padding: 3px 8px; border-radius: 4px; font-size: 12px;">{{ strtoupper(Auth::user()->role ?? 'ADMIN') }}</span>
+            <h2 class="text-xl font-bold text-gray-900">Ringkasan</h2>
+            <p class="text-sm text-gray-500">Selamat datang kembali, {{ Auth::user()->name ?? 'Admin' }}</p>
         </div>
-        <div style="color: #6c757d; font-size: 14px;">
-            {{ now()->format('d M Y') }}
-        </div>
+        <span class="inline-block px-3 py-1.5 rounded-full text-xs font-semibold" style="background:#fef3c7; color:#b45309;">
+            {{ now()->translatedFormat('d F Y') }}
+        </span>
     </div>
 
-    <!-- Kotak Statistik -->
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 25px;">
-        <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-left: 4px solid #0d6efd;">
-            <div style="color: #6c757d; font-size: 12px; font-weight: bold; text-transform: uppercase; margin-bottom: 5px;">Total Alat</div>
-            <div style="font-size: 24px; font-weight: bold; color: #333;">{{ \App\Models\Alat::count() }}</div>
+    <!-- Kotak Statistik ala kartu "Drivery" -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+
+        <!-- Kartu hero gelap (kontras dengan background putih) -->
+        <div class="rounded-2xl p-5 relative overflow-hidden" style="background:#0f1729;">
+            <p class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Total Alat</p>
+            <p class="text-3xl font-bold text-white mb-1">{{ \App\Models\Alat::count() }}</p>
+            <p class="text-[11px]" style="color:#f2a93b;">Unit terdaftar di sistem</p>
         </div>
-        <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-left: 4px solid #198754;">
-            <div style="color: #6c757d; font-size: 12px; font-weight: bold; text-transform: uppercase; margin-bottom: 5px;">Sedang Dipinjam</div>
-            <div style="font-size: 24px; font-weight: bold; color: #333;">{{ \App\Models\Peminjaman::whereIn('status', ['Dipinjam', 'dipinjam', 'Telat', 'telat'])->count() }}</div>
+
+        <div class="rounded-2xl p-5 bg-white border border-gray-100 shadow-sm">
+            <div class="flex items-start justify-between mb-3">
+                <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:#fef3c7;">
+                    <svg class="w-5 h-5" style="color:#b45309;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M9 13h6M9 17h6"/></svg>
+                </div>
+            </div>
+            <p class="text-2xl font-bold text-gray-900">{{ \App\Models\Peminjaman::whereIn('status', ['Dipinjam', 'dipinjam', 'Telat', 'telat'])->count() }}</p>
+            <p class="text-[11px] text-gray-400 mt-1">Sedang Dipinjam</p>
         </div>
-        <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-left: 4px solid #ffc107;">
-            <div style="color: #6c757d; font-size: 12px; font-weight: bold; text-transform: uppercase; margin-bottom: 5px;">Pending Request</div>
-            <div style="font-size: 24px; font-weight: bold; color: #333;">{{ \App\Models\Peminjaman::whereIn('status', ['Diajukan', 'diajukan', 'Pending', 'pending'])->count() }}</div>
+
+        <div class="rounded-2xl p-5 bg-white border border-gray-100 shadow-sm">
+            <div class="flex items-start justify-between mb-3">
+                <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:#dbeafe;">
+                    <svg class="w-5 h-5 text-blue-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                </div>
+            </div>
+            <p class="text-2xl font-bold text-gray-900">{{ \App\Models\Peminjaman::whereIn('status', ['Diajukan', 'diajukan', 'Pending', 'pending'])->count() }}</p>
+            <p class="text-[11px] text-gray-400 mt-1">Pending Request</p>
         </div>
-        <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); border-left: 4px solid #0dcaf0;">
-            <div style="color: #6c757d; font-size: 12px; font-weight: bold; text-transform: uppercase; margin-bottom: 5px;">Total User</div>
-            <div style="font-size: 24px; font-weight: bold; color: #333;">{{ \App\Models\User::count() }}</div>
+
+        <div class="rounded-2xl p-5 bg-white border border-gray-100 shadow-sm">
+            <div class="flex items-start justify-between mb-3">
+                <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background:#dcfce7;">
+                    <svg class="w-5 h-5 text-green-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                </div>
+            </div>
+            <p class="text-2xl font-bold text-gray-900">{{ \App\Models\User::count() }}</p>
+            <p class="text-[11px] text-gray-400 mt-1">Total User</p>
         </div>
+
     </div>
 
-    <!-- Tabel Log Aktivitas -->
-    <div style="background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); overflow: hidden;">
-        <div style="padding: 15px 20px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
-            <h3 style="margin: 0; font-size: 16px; font-weight: bold; color: #333;">Log Aktivitas Terbaru</h3>
-            <div style="font-size: 12px; color: #6c757d;">
-                <span style="margin-right: 10px;">🔵 Import / Update</span>
-                <span style="margin-right: 10px;">🟢 Approve / Tambah</span>
-                <span style="margin-right: 10px;">🟡 Request</span>
-                <span>🔴 Return / Hapus</span>
+    <!-- Log Aktivitas ala list "Drivery" -->
+    <div class="rounded-2xl bg-white border border-gray-100 shadow-sm p-5">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+            <h3 class="text-base font-bold text-gray-900">Log Aktivitas Terbaru</h3>
+            <div class="flex flex-wrap items-center gap-3 text-[10px] uppercase tracking-wider text-gray-400">
+                <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full" style="background:#3b82f6;"></span>Import/Update</span>
+                <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full" style="background:#16a34a;"></span>Approve/Add</span>
+                <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full" style="background:#f2a93b;"></span>Request</span>
+                <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full" style="background:#dc2626;"></span>Return/Delete</span>
             </div>
         </div>
-        <div style="overflow-x: auto;">
-            <table style="width: 100%; border-collapse: collapse; text-align: left; font-size: 14px;">
-                <thead>
-                    <tr style="background-color: #f8f9fa; color: #6c757d; border-bottom: 1px solid #eee;">
-                        <th style="padding: 12px 20px; width: 20%;">Waktu</th>
-                        <th style="padding: 12px 20px; width: 20%;">User</th>
-                        <th style="padding: 12px 20px;">Aktivitas</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($logs ?? [] as $log)
-                        @php
-                            $act = strtolower($log->aktivitas);
-                            // Menentukan warna badge berdasarkan kata kunci dalam teks aktivitas
-                            if (str_contains($act, 'hapus') || str_contains($act, 'pengembalian') || str_contains($act, 'return')) {
-                                $badgeBg = '#dc3545'; $badgeText = 'Return/Delete';
-                            } elseif (str_contains($act, 'menyetujui') || str_contains($act, 'menambahkan')) {
-                                $badgeBg = '#198754'; $badgeText = 'Approve/Add';
-                            } elseif (str_contains($act, 'membuat') || str_contains($act, 'mengajukan')) {
-                                $badgeBg = '#ffc107'; $badgeText = 'Request'; $fontColor = '#000';
-                            } else {
-                                $badgeBg = '#0d6efd'; $badgeText = 'Action';
-                            }
-                            $fontColor = $fontColor ?? '#fff';
-                        @endphp
-                        <tr style="border-bottom: 1px solid #f2f2f2;">
-                            <td style="padding: 12px 20px; color: #555;">{{ $log->created_at->format('Y-m-d H:i:s') }}</td>
-                            <td style="padding: 12px 20px; font-weight: bold;">{{ $log->user->name ?? 'System' }}</td>
-                            <td style="padding: 12px 20px;">
-                                <span style="background: {{ $badgeBg }}; color: {{ $fontColor }}; padding: 2px 6px; border-radius: 4px; font-size: 11px; margin-right: 5px;">
-                                    {{ $badgeText }}
-                                </span> 
-                                {{ $log->aktivitas }}
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="3" style="padding: 20px; text-align: center; color: #6c757d;">Belum ada log aktivitas yang tercatat.</td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
+
+        <div class="space-y-2">
+            @forelse($logs ?? [] as $log)
+                @php
+                    $act = strtolower($log->aktivitas);
+                    if (str_contains($act, 'hapus') || str_contains($act, 'pengembalian') || str_contains($act, 'return')) {
+                        $badgeBg = '#fee2e2'; $badgeColor = '#dc2626'; $badgeText = 'Return/Delete';
+                    } elseif (str_contains($act, 'menyetujui') || str_contains($act, 'menambahkan')) {
+                        $badgeBg = '#dcfce7'; $badgeColor = '#16a34a'; $badgeText = 'Approve/Add';
+                    } elseif (str_contains($act, 'membuat') || str_contains($act, 'mengajukan')) {
+                        $badgeBg = '#fef3c7'; $badgeColor = '#b45309'; $badgeText = 'Request';
+                    } else {
+                        $badgeBg = '#dbeafe'; $badgeColor = '#2563eb'; $badgeText = 'Action';
+                    }
+                    $initial = strtoupper(substr($log->user->name ?? 'S', 0, 1));
+                @endphp
+                <div class="flex items-center gap-4 rounded-full px-4 py-2.5 hover:bg-gray-50 transition" style="background:#f9fafb;">
+                    <div class="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-white text-xs font-bold" style="background:#0f1729;">
+                        {{ $initial }}
+                    </div>
+                    <div class="min-w-0 flex-1">
+                        <p class="text-sm font-semibold text-gray-900 truncate">{{ $log->user->name ?? 'System' }}</p>
+                        <p class="text-xs text-gray-400 truncate">{{ $log->aktivitas }}</p>
+                    </div>
+                    <span class="hidden sm:inline-block px-2.5 py-1 rounded-full text-[10px] font-bold uppercase flex-shrink-0" style="background:{{ $badgeBg }}; color:{{ $badgeColor }};">
+                        {{ $badgeText }}
+                    </span>
+                    <span class="text-[11px] text-gray-400 font-mono flex-shrink-0 hidden md:inline">{{ $log->created_at->format('H:i') }}</span>
+                    <svg class="w-4 h-4 text-gray-300 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+                </div>
+            @empty
+                <p class="text-center text-gray-400 text-sm py-8">Belum ada log aktivitas yang tercatat.</p>
+            @endforelse
         </div>
     </div>
 

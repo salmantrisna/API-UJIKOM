@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\Peminjaman;
 use App\Models\Pengembalian;
 use App\Models\Alat;
+use App\Models\LogAktivitas;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 use Exception;
 
 class PetugasController extends Controller
@@ -28,7 +30,7 @@ class PetugasController extends Controller
         return view('petugas.peminjaman.index', compact('peminjamans', 'search'));
     }
 
-    // TAMBAHKAN METHOD INI: Menampilkan daftar alat yang sedang dipinjam/telat untuk dimantau
+    // Menampilkan daftar alat yang sedang dipinjam/telat untuk dimantau
     public function indexPengembalian(Request $request)
     {
         $search = $request->input('search');
@@ -46,26 +48,43 @@ class PetugasController extends Controller
         return view('petugas.pengembalian.index', compact('peminjamans', 'search'));
     }
 
-    // Menyetujui peminjaman dan mengurangi stok alat secara otomatis
-    public function setujuiPeminjaman($id)
+    // Menyetujui atau menolak peminjaman
+    public function setujuiPeminjaman(Request $request, $id)
     {
         DB::beginTransaction();
         try {
             $peminjaman = Peminjaman::with('detailPinjam')->findOrFail($id);
-            
-            // Pastikan hanya status 'diajukan' yang bisa disetujui (opsional pengaman)
+
             if (strtolower($peminjaman->status) !== 'diajukan') {
                 return redirect()->back()->with('error', 'Peminjaman ini sudah diproses sebelumnya.');
             }
 
+            // Cek apakah ini aksi tolak atau setuju
+            if ($request->input('status') === 'ditolak') {
+                $peminjaman->update(['status' => 'ditolak']);
+
+                LogAktivitas::create([
+                    'user_id'   => auth()->id(),
+                    'aktivitas' => 'Menolak pengajuan peminjaman ID: ' . $peminjaman->id,
+                ]);
+
+                DB::commit();
+                return redirect()->back()->with('success', 'Pengajuan peminjaman telah ditolak.');
+            }
+
+            // Kalau bukan tolak, berarti setujui seperti biasa
             $peminjaman->update(['status' => 'dipinjam']);
 
-            // Kurangi stok alat secara otomatis
             foreach ($peminjaman->detailPinjam as $detail) {
                 $alat = Alat::findOrFail($detail->alat_id);
                 $alat->stok -= $detail->jumlah;
                 $alat->save();
             }
+
+            LogAktivitas::create([
+                'user_id'   => auth()->id(),
+                'aktivitas' => 'Menyetujui peminjaman ID: ' . $peminjaman->id,
+            ]);
 
             DB::commit();
             return redirect()->back()->with('success', 'Peminjaman disetujui dan stok alat dikurangi.');
@@ -75,29 +94,41 @@ class PetugasController extends Controller
         }
     }
 
-    // Memproses pengembalian alat dan mengembalikan stok
+    // Memproses pengembalian alat, menghitung denda otomatis, dan mengembalikan stok
     public function prosesPengembalian(Request $request, $pinjamanId)
     {
         $request->validate([
             'kondisi_kembali' => 'required|string',
-            'denda' => 'nullable|integer',
         ]);
 
         DB::beginTransaction();
         try {
             $peminjaman = Peminjaman::with('detailPinjam')->findOrFail($pinjamanId);
 
+            // Hitung denda otomatis berdasarkan keterlambatan
+            $denda = 0;
+            $tglPlan = Carbon::parse($peminjaman->tgl_kembali_plan)->startOfDay();
+            $tglSekarang = Carbon::now()->startOfDay();
+
+            if ($tglSekarang->greaterThan($tglPlan)) {
+                $hariTelat = $tglPlan->diffInDays($tglSekarang);
+                $denda = $hariTelat * 5000;
+            }
+
             // Simpan data pengembalian
             Pengembalian::create([
                 'peminjaman_id' => $peminjaman->id,
                 'tgl_kembali' => now(),
                 'kondisi_kembali' => $request->kondisi_kembali,
-                'denda' => $request->denda ?? 0,
+                'denda' => $denda,
                 'petugas_id' => auth()->id(),
             ]);
 
-            // Update status peminjaman jadi dikembalikan
-            $peminjaman->update(['status' => 'dikembalikan']);
+            // Update status peminjaman jadi dikembalikan, sekaligus simpan dendanya
+            $peminjaman->update([
+                'status' => 'dikembalikan',
+                'denda' => $denda,
+            ]);
 
             // Kembalikan stok alat ke inventaris
             foreach ($peminjaman->detailPinjam as $detail) {
@@ -106,13 +137,24 @@ class PetugasController extends Controller
                 $alat->save();
             }
 
+            LogAktivitas::create([
+                'user_id'   => auth()->id(),
+                'aktivitas' => 'Memverifikasi pengembalian untuk peminjaman ID: ' . $peminjaman->id,
+            ]);
+
             DB::commit();
-            return redirect()->back()->with('success', 'Pengembalian berhasil dicatat dan stok dipulihkan.');
+
+            $pesanDenda = $denda > 0
+                ? " Denda keterlambatan: Rp " . number_format($denda, 0, ',', '.')
+                : " Tidak ada denda.";
+
+            return redirect()->back()->with('success', 'Pengembalian berhasil dicatat dan stok dipulihkan.' . $pesanDenda);
         } catch (Exception $e) {
             DB::rollback();
             return redirect()->back()->with('error', 'Terjadi kesalahan: ' . $e->getMessage());
         }
     }
+
     public function laporan(Request $request)
     {
         $status = $request->input('status');

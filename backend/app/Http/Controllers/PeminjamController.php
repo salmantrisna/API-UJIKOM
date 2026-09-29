@@ -6,6 +6,7 @@ use App\Models\Alat;
 use App\Models\Kategori;
 use App\Models\Peminjaman;
 use App\Models\DetailPinjam;
+use App\Models\LogAktivitas;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
@@ -41,7 +42,7 @@ class PeminjamController extends Controller
             'tgl_pinjam' => 'required|date',
             'tgl_kembali_plan' => 'required|date|after_or_equal:tgl_pinjam',
             'alat_id' => 'required|array|min:1',
-            'alat_id.*' => 'exists:alat,id', // Diperbarui dari 'alats' menjadi 'alat'
+            'alat_id.*' => 'exists:alat,id',
             'jumlah' => 'required|array',
             'jumlah.*' => 'integer|min:1',
         ], [
@@ -72,6 +73,11 @@ class PeminjamController extends Controller
                 ]);
             }
 
+            LogAktivitas::create([
+                'user_id'   => Auth::id(),
+                'aktivitas' => 'Mengajukan peminjaman baru (ID: ' . $peminjaman->id . ')',
+            ]);
+
             DB::commit();
             return redirect()->route('peminjam.riwayat')->with('success', 'Pengajuan peminjaman berhasil dikirim, menunggu persetujuan petugas.');
         } catch (\Exception $e) {
@@ -101,6 +107,11 @@ class PeminjamController extends Controller
         }
 
         $peminjaman->update(['status' => 'dikembalikan']);
+
+        LogAktivitas::create([
+            'user_id'   => Auth::id(),
+            'aktivitas' => 'Mengajukan pengembalian untuk peminjaman ID: ' . $peminjaman->id,
+        ]);
 
         return redirect()->back()->with('success', 'Pengembalian diajukan, menunggu verifikasi petugas.');
     }

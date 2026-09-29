@@ -311,21 +311,22 @@ class AdminController extends Controller
     }
 
     // --- TRANSAKSI PEMINJAMAN ---
-    public function indexPeminjaman(Request $request)
-    {
-        $search = $request->input('search');
+   public function indexPeminjaman(Request $request)
+{
+    $search = $request->input('search');
 
-        $peminjamans = Peminjaman::with(['user', 'detailPinjam.alat'])
-            ->when($search, function ($query, $search) {
-                return $query->where('status', 'like', "%{$search}%")
-                    ->orWhereHas('user', function ($q) use ($search) {
-                        $q->where('name', 'like', "%{$search}%");
-                    });
-            })
-            ->latest()
-            ->paginate(10);
+    $peminjamans = Peminjaman::with(['user', 'detailPinjam.alat', 'pengembalian'])
+        ->when($search, function ($query, $search) {
+            return $query->where('status', 'like', "%{$search}%")
+                ->orWhereHas('user', function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%");
+                });
+        })
+        ->latest()
+        ->paginate(10);
 
-        return view('admin.peminjaman.index', compact('peminjamans'));
+    return view('admin.peminjaman.index', compact('peminjamans'));
+
     }
 
     public function createPeminjaman()
@@ -507,16 +508,37 @@ class AdminController extends Controller
         return view('admin.pengembalian.pilih', compact('peminjamans'));
     }
 
-    public function storePengembalian(Request $request, $id)
-    {
-        $peminjaman = Peminjaman::with('detailPinjam')->findOrFail($id);
+   public function storePengembalian(Request $request, $id)
+{
+    $peminjaman = Peminjaman::with('detailPinjam')->findOrFail($id);
 
-        $peminjaman->update([
-            'tgl_kembali_real' => $request->tgl_kembali_real ?? date('Y-m-d'),
-            'status' => 'Dikembalikan',
-            'denda' => $request->denda ?? 0,
+    $request->validate([
+        'tgl_kembali' => 'required|date',
+        'kondisi_kembali' => 'required|string',
+    ]);
+
+    DB::transaction(function () use ($request, $peminjaman) {
+        // Hitung denda otomatis
+        $plan = Carbon::parse($peminjaman->tgl_kembali_plan)->startOfDay();
+        $tglKembali = Carbon::parse($request->tgl_kembali)->startOfDay();
+        $denda = $tglKembali->greaterThan($plan) ? $plan->diffInDays($tglKembali) * 5000 : 0;
+
+        // Simpan record pengembalian
+        \App\Models\Pengembalian::create([
+            'peminjaman_id' => $peminjaman->id,
+            'tgl_kembali' => $request->tgl_kembali,
+            'kondisi_kembali' => $request->kondisi_kembali,
+            'denda' => $denda,
+            'petugas_id' => auth()->id(),
         ]);
 
+        // Update status dan denda di peminjaman
+        $peminjaman->update([
+            'status' => 'dikembalikan',
+            'denda' => $denda,
+        ]);
+
+        // Kembalikan stok
         foreach ($peminjaman->detailPinjam as $detail) {
             $alat = Alat::find($detail->alat_id);
             if ($alat) {
@@ -526,12 +548,13 @@ class AdminController extends Controller
         }
 
         LogAktivitas::create([
-            'user_id'   => Auth::id(),
-            'aktivitas' => 'Memproses pengembalian alat untuk transaksi ID: ' . $id,
+            'user_id'   => auth()->id(),
+            'aktivitas' => 'Memproses pengembalian alat untuk peminjaman ID: ' . $peminjaman->id,
         ]);
+    });
 
-        return redirect()->route('admin.pengembalian.index')->with('success', 'Pengembalian berhasil diproses dan stok telah diperbarui!');
-    }
+    return redirect()->route('admin.pengembalian.index')->with('success', 'Pengembalian berhasil diproses dan stok telah diperbarui!');
+}
 
     public function editPengembalian($id)
     {

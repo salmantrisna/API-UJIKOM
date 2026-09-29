@@ -4,101 +4,117 @@
 @section('header-title', 'Pemantauan & Proses Pengembalian Alat')
 
 @section('content')
-@if(session('success'))
-    <div class="mb-4 bg-emerald-50 border border-emerald-200 text-emerald-800 p-4 rounded-lg shadow-sm text-sm">
-        {{ session('success') }}
-    </div>
-@endif
+<div class="space-y-5">
 
-@if(session('error'))
-    <div class="mb-4 bg-red-50 border border-red-200 text-red-800 p-4 rounded-lg shadow-sm text-sm">
-        {{ session('error') }}
-    </div>
-@endif
+    @if(session('success'))
+        <div class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm" style="background:#dcfce7; color:#166534;">
+            <svg class="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>
+            {{ session('success') }}
+        </div>
+    @endif
 
-<div class="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
-    <div class="p-5 border-b border-gray-200 bg-gray-50">
-        <h3 class="text-lg font-bold text-gray-800">Daftar Peminjaman Aktif (Belum Kembali)</h3>
-        <form action="{{ route('petugas.pengembalian.index') }}" method="GET" class="flex w-full md:w-80 mt-3">
-            <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari nama peminjam..." 
-                class="w-full px-3 py-2 text-sm border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-emerald-500">
-            <button type="submit" class="bg-gray-800 hover:bg-gray-900 text-white px-4 py-2 text-sm font-semibold rounded-r-lg transition">
-                Cari
-            </button>
+    @if(session('error'))
+        <div class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm" style="background:#fee2e2; color:#dc2626;">
+            <svg class="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+            {{ session('error') }}
+        </div>
+    @endif
+
+    <!-- Header + Search -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+            <h2 class="text-xl font-bold text-gray-900">Daftar Peminjaman Aktif</h2>
+            <p class="text-sm text-gray-400">{{ $peminjamans->count() }} peminjaman belum dikembalikan</p>
+        </div>
+
+        <form action="{{ route('petugas.pengembalian.index') }}" method="GET" class="flex items-center gap-2 w-full md:w-80 rounded-full px-4 py-2 bg-white border border-gray-200 shadow-sm">
+            <svg class="w-4 h-4 text-gray-400 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            <input type="text" name="search" value="{{ request('search') }}" placeholder="Cari nama peminjam..."
+                class="w-full text-sm bg-transparent focus:outline-none text-gray-700">
             @if(request('search'))
-                <a href="{{ route('petugas.pengembalian.index') }}" 
-                class="ml-2 bg-gray-300 hover:bg-gray-400 text-gray-700 px-3 py-2 text-sm rounded-lg flex items-center transition">
-                    Reset
+                <a href="{{ route('petugas.pengembalian.index') }}" class="text-gray-400 hover:text-gray-600 flex-shrink-0">
+                    <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
                 </a>
             @endif
         </form>
     </div>
 
-    <div class="overflow-x-auto">
-        <table class="w-full text-left border-collapse">
-            <thead>
-                <tr class="bg-gray-100 text-gray-600 text-sm uppercase tracking-wider">
-                    <th class="py-3 px-4 border-b">Peminjam</th>
-                    <th class="py-3 px-4 border-b">Tgl Pinjam</th>
-                    <th class="py-3 px-4 border-b">Rencana Kembali</th>
-                    <th class="py-3 px-4 border-b">Status</th>
-                    <th class="py-3 px-4 border-b">Detail Alat</th>
-                    <th class="py-3 px-4 border-b text-center">Aksi Pengembalian</th>
-                </tr>
-            </thead>
-            <tbody class="text-gray-700 text-sm">
-                @forelse($peminjamans as $item)
-                    <tr class="hover:bg-gray-50 transition align-top">
-                        <td class="py-3 px-4 border-b font-medium text-gray-900">
-                            {{ $item->user->name ?? 'User Dihapus' }}
-                        </td>
-                        <td class="py-3 px-4 border-b">{{ $item->tgl_pinjam }}</td>
-                        <td class="py-3 px-4 border-b">{{ $item->tgl_kembali_plan }}</td>
-                        <td class="py-3 px-4 border-b">
-                            <span class="px-2.5 py-1 rounded text-xs font-semibold {{ $item->status == 'telat' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700' }}">
+    <!-- List Card (bukan tabel biasa, karena tiap baris punya form sendiri) -->
+    <div class="space-y-3">
+        @forelse($peminjamans as $item)
+            @php
+                $tglPlan = \Carbon\Carbon::parse($item->tgl_kembali_plan)->startOfDay();
+                $tglSekarang = \Carbon\Carbon::now()->startOfDay();
+                $hariTelat = $tglSekarang->greaterThan($tglPlan) ? $tglPlan->diffInDays($tglSekarang) : 0;
+                $dendaPreview = $hariTelat * 5000;
+            @endphp
+            <div class="rounded-2xl bg-white border border-gray-100 shadow-sm p-5">
+                <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-5">
+
+                    <!-- Info kiri -->
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center gap-3 mb-3">
+                            <div class="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-white text-xs font-bold" style="background:#0f1729;">
+                                {{ strtoupper(substr($item->user->name ?? 'U', 0, 1)) }}
+                            </div>
+                            <div>
+                                <p class="font-semibold text-gray-900">{{ $item->user->name ?? 'User Dihapus' }}</p>
+                                <p class="text-xs text-gray-400">
+                                    Pinjam {{ \Carbon\Carbon::parse($item->tgl_pinjam)->format('d M Y') }} · Rencana {{ \Carbon\Carbon::parse($item->tgl_kembali_plan)->format('d M Y') }}
+                                </p>
+                            </div>
+                            <span class="ml-1 px-2.5 py-1 text-[11px] font-semibold rounded-full" style="{{ $item->status == 'telat' ? 'background:#fee2e2; color:#dc2626;' : 'background:#dbeafe; color:#2563eb;' }}">
                                 {{ ucfirst($item->status) }}
                             </span>
-                        </td>
-                        <td class="py-3 px-4 border-b">
-                            <ul class="list-disc list-inside space-y-1 text-xs">
-                                @foreach($item->detailPinjam as $detail)
-                                    <li>
-                                        <span class="font-semibold">{{ $detail->alat->nama_alat ?? 'Alat Dihapus' }}</span> 
-                                        (Jumlah: {{ $detail->jumlah }})
-                                    </li>
-                                @endforeach
-                            </ul>
-                        </td>
-                        <td class="py-3 px-4 border-b text-center">
-                            <form action="{{ route('petugas.pengembalian.proses', $item->id) }}" method="POST" class="inline-block bg-gray-50 p-3 rounded border border-gray-200 text-left space-y-2">
-                                @csrf
-                                <div>
-                                    <label class="block text-xs font-semibold text-gray-600 mb-1">Kondisi Kembali:</label>
-                                    <select name="kondisi_kembali" required class="w-full text-xs border border-gray-300 rounded px-2 py-1 focus:ring-emerald-500 focus:border-emerald-500">
-                                        <option value="Baik">Baik</option>
-                                        <option value="Rusak Ringan">Rusak Ringan</option>
-                                        <option value="Rusak Berat">Rusak Berat</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-semibold text-gray-600 mb-1">Denda (Rp):</label>
-                                    <input type="number" name="denda" value="0" placeholder="0" 
-                                        class="w-full text-xs border border-gray-300 rounded px-2 py-1 focus:ring-emerald-500 focus:border-emerald-500">
-                                </div>
-                                <button type="submit" onclick="return confirm('Proses pengembalian alat ini?')" 
-                                    class="w-full bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded text-xs font-semibold transition shadow-sm">
-                                    Terima Pengembalian
-                                </button>
-                            </form>
-                        </td>
-                    </tr>
-                @empty
-                    <tr>
-                        <td colspan="6" class="py-6 text-center text-gray-500">Tidak ada peminjaman yang sedang aktif saat ini.</td>
-                    </tr>
-                @endforelse
-            </tbody>
-        </table>
+                        </div>
+
+                        <ul class="space-y-1 pl-1">
+                            @foreach($item->detailPinjam as $detail)
+                                <li class="flex items-center gap-1.5 text-sm">
+                                    <span class="w-1 h-1 rounded-full bg-gray-300 flex-shrink-0"></span>
+                                    <span class="font-medium text-gray-800">{{ $detail->alat->nama_alat ?? 'Alat Dihapus' }}</span>
+                                    <span class="text-xs text-gray-400">(Jumlah: {{ $detail->jumlah }})</span>
+                                </li>
+                            @endforeach
+                        </ul>
+                    </div>
+
+                    <!-- Form aksi kanan -->
+                    <form action="{{ route('petugas.pengembalian.proses', $item->id) }}" method="POST"
+                        class="flex flex-col sm:flex-row lg:flex-col gap-3 rounded-2xl p-4 w-full lg:w-72 flex-shrink-0" style="background:#f9fafb;">
+                        @csrf
+                        <div class="flex-1">
+                            <label class="block text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Kondisi Kembali</label>
+                            <select name="kondisi_kembali" required class="w-full text-sm border border-gray-200 rounded-full px-3 py-2 bg-white focus:outline-none focus:ring-1 focus:ring-gray-300">
+                                <option value="Baik">Baik</option>
+                                <option value="Rusak Ringan">Rusak Ringan</option>
+                                <option value="Rusak Berat">Rusak Berat</option>
+                            </select>
+                        </div>
+
+                        <div class="flex-1">
+                            <label class="block text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
+                                Denda @if($hariTelat > 0)<span style="color:#dc2626;">(telat {{ $hariTelat }} hari)</span>@endif
+                            </label>
+                            <div class="w-full text-sm rounded-full px-3 py-2 font-semibold" style="background:#f3f4f6; color:{{ $dendaPreview > 0 ? '#dc2626' : '#6b7280' }};">
+                                Rp {{ number_format($dendaPreview, 0, ',', '.') }}
+                            </div>
+                        </div>
+
+                        <button type="submit" onclick="return confirm('Proses pengembalian alat ini?')"
+                            class="flex items-center justify-center gap-2 text-white text-sm font-semibold px-4 py-2.5 rounded-full transition" style="background:#0f1729;">
+                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                            Terima Pengembalian
+                        </button>
+                    </form>
+                </div>
+            </div>
+        @empty
+            <div class="rounded-2xl bg-white border border-gray-100 shadow-sm py-10 text-center text-gray-400 text-sm">
+                Tidak ada peminjaman yang sedang aktif saat ini.
+            </div>
+        @endforelse
     </div>
+
 </div>
 @endsection
