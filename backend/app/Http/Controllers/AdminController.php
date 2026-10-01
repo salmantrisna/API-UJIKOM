@@ -508,7 +508,7 @@ class AdminController extends Controller
         return view('admin.pengembalian.pilih', compact('peminjamans'));
     }
 
-   public function storePengembalian(Request $request, $id)
+ public function storePengembalian(Request $request, $id)
 {
     $peminjaman = Peminjaman::with('detailPinjam')->findOrFail($id);
 
@@ -518,10 +518,19 @@ class AdminController extends Controller
     ]);
 
     DB::transaction(function () use ($request, $peminjaman) {
-        // Hitung denda otomatis
+        // Hitung denda keterlambatan
         $plan = Carbon::parse($peminjaman->tgl_kembali_plan)->startOfDay();
         $tglKembali = Carbon::parse($request->tgl_kembali)->startOfDay();
-        $denda = $tglKembali->greaterThan($plan) ? $plan->diffInDays($tglKembali) * 5000 : 0;
+        $dendaTelat = $tglKembali->greaterThan($plan) ? $plan->diffInDays($tglKembali) * 5000 : 0;
+
+        // Hitung denda kerusakan berdasarkan kondisi kembali
+        $dendaKerusakan = match ($request->kondisi_kembali) {
+            'Rusak Ringan' => 25000,
+            'Rusak Berat' => 100000,
+            default => 0,
+        };
+
+        $denda = $dendaTelat + $dendaKerusakan;
 
         // Simpan record pengembalian
         \App\Models\Pengembalian::create([

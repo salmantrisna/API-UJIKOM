@@ -9,7 +9,7 @@
             $plan = \Carbon\Carbon::parse($peminjaman->tgl_kembali_plan)->startOfDay();
             $now = \Carbon\Carbon::now()->startOfDay();
             $hariTelat = $now->greaterThan($plan) ? $plan->diffInDays($now) : 0;
-            $dendaOtomatis = $hariTelat * 5000;
+            $dendaTelat = $hariTelat * 5000;
         @endphp
 
         <!-- Info Peminjaman -->
@@ -44,7 +44,7 @@
             <!-- Kondisi Alat -->
             <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-1">Kondisi Alat</label>
-                <select name="kondisi_kembali" class="border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-800 w-full" required>
+                <select name="kondisi_kembali" id="kondisi_kembali" onchange="updateDenda()" class="border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-800 w-full" required>
                     <option value="Baik">Baik</option>
                     <option value="Rusak Ringan">Rusak Ringan</option>
                     <option value="Rusak Berat">Rusak Berat</option>
@@ -54,14 +54,15 @@
             <!-- Denda (otomatis, read-only) -->
             <div>
                 <label class="block text-sm font-semibold text-gray-700 mb-1">Denda (Rp)</label>
-                <input type="text" value="Rp {{ number_format($dendaOtomatis, 0, ',', '.') }}" readonly
+                <input type="text" id="denda_display" value="Rp {{ number_format($dendaTelat, 0, ',', '.') }}" readonly
                     class="border border-gray-300 rounded-lg px-4 py-2 text-sm w-full bg-gray-100 text-gray-700 cursor-not-allowed">
                 <p class="text-xs text-gray-500 mt-1">
                     @if($hariTelat > 0)
-                        Terlambat {{ $hariTelat }} hari dari batas waktu. Denda dihitung otomatis.
+                        Terlambat {{ $hariTelat }} hari dari batas waktu (Rp {{ number_format($dendaTelat, 0, ',', '.') }}).
                     @else
                         Tidak ada keterlambatan.
                     @endif
+                    <span id="ket_kerusakan"></span>
                 </p>
             </div>
 
@@ -77,4 +78,26 @@
         </form>
     </div>
 </div>
+
+<script>
+    const dendaTelat = {{ $dendaTelat }};
+
+    function updateDenda() {
+        const kondisi = document.getElementById('kondisi_kembali').value;
+        let dendaKerusakan = 0;
+        let ketKerusakan = '';
+
+        if (kondisi === 'Rusak Ringan') {
+            dendaKerusakan = 25000;
+            ketKerusakan = ' + Rp 25.000 (Rusak Ringan)';
+        } else if (kondisi === 'Rusak Berat') {
+            dendaKerusakan = 100000;
+            ketKerusakan = ' + Rp 100.000 (Rusak Berat)';
+        }
+
+        const total = dendaTelat + dendaKerusakan;
+        document.getElementById('denda_display').value = 'Rp ' + total.toLocaleString('id-ID');
+        document.getElementById('ket_kerusakan').textContent = ketKerusakan;
+    }
+</script>
 @endsection

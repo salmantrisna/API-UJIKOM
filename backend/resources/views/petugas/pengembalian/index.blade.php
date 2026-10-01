@@ -85,7 +85,7 @@
                         @csrf
                         <div class="flex-1">
                             <label class="block text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Kondisi Kembali</label>
-                            <select name="kondisi_kembali" required class="w-full text-sm border border-gray-200 rounded-full px-3 py-2 bg-white focus:outline-none focus:ring-1 focus:ring-gray-300">
+                            <select name="kondisi_kembali" required onchange="updateDenda{{ $item->id }}()" id="kondisi-{{ $item->id }}" class="w-full text-sm border border-gray-200 rounded-full px-3 py-2 bg-white focus:outline-none focus:ring-1 focus:ring-gray-300">
                                 <option value="Baik">Baik</option>
                                 <option value="Rusak Ringan">Rusak Ringan</option>
                                 <option value="Rusak Berat">Rusak Berat</option>
@@ -96,7 +96,7 @@
                             <label class="block text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">
                                 Denda @if($hariTelat > 0)<span style="color:#dc2626;">(telat {{ $hariTelat }} hari)</span>@endif
                             </label>
-                            <div class="w-full text-sm rounded-full px-3 py-2 font-semibold" style="background:#f3f4f6; color:{{ $dendaPreview > 0 ? '#dc2626' : '#6b7280' }};">
+                            <div id="denda-{{ $item->id }}" class="w-full text-sm rounded-full px-3 py-2 font-semibold" style="background:#f3f4f6; color:{{ $dendaPreview > 0 ? '#dc2626' : '#6b7280' }};">
                                 Rp {{ number_format($dendaPreview, 0, ',', '.') }}
                             </div>
                         </div>
@@ -109,6 +109,20 @@
                     </form>
                 </div>
             </div>
+
+            <script>
+                function updateDenda{{ $item->id }}() {
+                    const kondisi = document.getElementById('kondisi-{{ $item->id }}').value;
+                    const dendaTelat = {{ $dendaPreview }};
+                    let dendaKerusakan = 0;
+                    if (kondisi === 'Rusak Ringan') dendaKerusakan = 25000;
+                    if (kondisi === 'Rusak Berat') dendaKerusakan = 100000;
+                    const total = dendaTelat + dendaKerusakan;
+                    const el = document.getElementById('denda-{{ $item->id }}');
+                    el.textContent = 'Rp ' + total.toLocaleString('id-ID');
+                    el.style.color = total > 0 ? '#dc2626' : '#6b7280';
+                }
+            </script>
         @empty
             <div class="rounded-2xl bg-white border border-gray-100 shadow-sm py-10 text-center text-gray-400 text-sm">
                 Tidak ada peminjaman yang sedang aktif saat ini.

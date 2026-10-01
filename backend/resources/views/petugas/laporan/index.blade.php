@@ -4,100 +4,134 @@
 @section('header-title', 'Laporan Peminjaman & Pengembalian Alat')
 
 @section('content')
-<div class="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200 mb-5">
-    <div class="p-5 border-b border-gray-200 bg-gray-50">
-        <h3 class="text-lg font-bold text-gray-800">Filter Laporan</h3>
+<div class="space-y-5">
+
+    <!-- Filter -->
+    <div class="rounded-2xl bg-white border border-gray-100 shadow-sm p-5">
+        <h3 class="text-base font-bold text-gray-900 mb-4">Filter Laporan</h3>
+        <form action="{{ route('petugas.laporan.index') }}" method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+            <div>
+                <label class="block text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Status Peminjaman</label>
+                <select name="status" class="w-full text-sm border border-gray-200 rounded-full px-4 py-2.5 bg-white focus:outline-none focus:ring-1 focus:ring-gray-300">
+                    <option value="">Semua Status</option>
+                    <option value="diajukan" {{ request('status') == 'diajukan' ? 'selected' : '' }}>Diajukan</option>
+                    <option value="dipinjam" {{ request('status') == 'dipinjam' ? 'selected' : '' }}>Dipinjam</option>
+                    <option value="dikembalikan" {{ request('status') == 'dikembalikan' ? 'selected' : '' }}>Dikembalikan</option>
+                    <option value="telat" {{ request('status') == 'telat' ? 'selected' : '' }}>Telat</option>
+                    <option value="ditolak" {{ request('status') == 'ditolak' ? 'selected' : '' }}>Ditolak</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Dari Tanggal</label>
+                <input type="date" name="dari_tanggal" value="{{ request('dari_tanggal') }}"
+                    class="w-full text-sm border border-gray-200 rounded-full px-4 py-2.5 focus:outline-none focus:ring-1 focus:ring-gray-300">
+            </div>
+            <div>
+                <label class="block text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Sampai Tanggal</label>
+                <input type="date" name="sampai_tanggal" value="{{ request('sampai_tanggal') }}"
+                    class="w-full text-sm border border-gray-200 rounded-full px-4 py-2.5 focus:outline-none focus:ring-1 focus:ring-gray-300">
+            </div>
+            <div class="flex gap-2">
+                <button type="submit" class="flex-1 text-white text-sm font-semibold px-4 py-2.5 rounded-full transition" style="background:#0f1729;">
+                    Filter
+                </button>
+                <a href="{{ route('petugas.laporan.index') }}"
+                    class="px-4 py-2.5 text-sm font-semibold rounded-full transition flex items-center justify-center text-gray-600" style="background:#f3f4f6;">
+                    Reset
+                </a>
+            </div>
+        </form>
     </div>
-    <form action="{{ route('petugas.laporan.index') }}" method="GET" class="p-5 grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
-        <div>
-            <label class="block text-xs font-semibold text-gray-600 mb-1">Status Peminjaman:</label>
-            <select name="status" class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-emerald-500 focus:border-emerald-500">
-                <option value="">Semua Status</option>
-                <option value="diajukan" {{ request('status') == 'diajukan' ? 'selected' : '' }}>Diajukan</option>
-                <option value="dipinjam" {{ request('status') == 'dipinjam' ? 'selected' : '' }}>Dipinjam</option>
-                <option value="selesai" {{ request('status') == 'selesai' ? 'selected' : '' }}>Selesai</option>
-                <option value="telat" {{ request('status') == 'telat' ? 'selected' : '' }}>Telat</option>
-            </select>
-        </div>
-        <div>
-            <label class="block text-xs font-semibold text-gray-600 mb-1">Dari Tanggal (Pinjam):</label>
-            <input type="date" name="dari_tanggal" value="{{ request('dari_tanggal') }}"
-            class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-emerald-500 focus:border-emerald-500">
-        </div>
-        <div>
-            <label class="block text-xs font-semibold text-gray-600 mb-1">Sampai Tanggal (Pinjam):</label>
-            <input type="date" name="sampai_tanggal" value="{{ request('sampai_tanggal') }}"
-            class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-emerald-500 focus:border-emerald-500">
-        </div>
-        <div class="flex space-x-2">
-            <button type="submit" class="flex-1 bg-gray-800 hover:bg-gray-900 text-white px-4 py-2 text-sm font-semibold rounded-lg transition shadow-sm">
-                Filter
-            </button>
-            <a href="{{ route('petugas.laporan.index') }}"
-            class="bg-gray-300 hover:bg-gray-400 text-gray-700 px-3 py-2 text-sm rounded-lg transition flex items-center justify-center">
-                Reset
+
+    <!-- Hasil -->
+    <div class="rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-5 py-4" style="border-bottom:1px solid #f3f4f6;">
+            <div>
+                <h3 class="text-base font-bold text-gray-900">Hasil Rekap Laporan</h3>
+                <p class="text-xs text-gray-400">{{ $laporans->count() }} transaksi ditemukan</p>
+            </div>
+            <a href="{{ route('petugas.laporan.cetak', request()->all()) }}" target="_blank"
+                class="flex items-center gap-2 text-white text-sm font-semibold px-4 py-2.5 rounded-full transition" style="background:#0f1729;">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z"/></svg>
+                Cetak / Print
             </a>
         </div>
-    </form>
-</div>
 
-<!-- Tabel Hasil & Tombol Cetak -->
-<div class="bg-white rounded-lg shadow-sm overflow-hidden border border-gray-200">
-    <div class="p-5 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
-        <h3 class="text-lg font-bold text-gray-800">Hasil Rekap Laporan</h3>
-        <a href="{{ route('petugas.laporan.cetak', request()->all()) }}" target="_blank"
-        class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 text-sm font-semibold rounded-lg transition shadow-sm flex items-center space-x-2">
-            <span>Cetak / Print Laporan</span>
-        </a>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="text-[11px] uppercase tracking-wider text-gray-400" style="background:#f9fafb; border-bottom:1px solid #f0f0f0;">
+                        <th class="py-3 px-5 font-semibold w-12 text-center">No</th>
+                        <th class="py-3 px-5 font-semibold">Peminjam</th>
+                        <th class="py-3 px-5 font-semibold">Tanggal</th>
+                        <th class="py-3 px-5 font-semibold">Status</th>
+                        <th class="py-3 px-5 font-semibold">Detail Alat</th>
+                        <th class="py-3 px-5 font-semibold">Denda</th>
+                    </tr>
+                </thead>
+                <tbody class="text-sm">
+                    @forelse($laporans as $index => $item)
+                        @php
+                            $statusLower = strtolower($item->status);
+                            if (in_array($statusLower, ['dikembalikan', 'selesai'])) {
+                                $badgeBg = '#dcfce7'; $badgeColor = '#166534'; $badgeText = 'Dikembalikan';
+                            } elseif ($statusLower == 'dipinjam') {
+                                $badgeBg = '#dbeafe'; $badgeColor = '#2563eb'; $badgeText = 'Dipinjam';
+                            } elseif ($statusLower == 'telat') {
+                                $badgeBg = '#fee2e2'; $badgeColor = '#dc2626'; $badgeText = 'Telat';
+                            } elseif ($statusLower == 'diajukan') {
+                                $badgeBg = '#fef3c7'; $badgeColor = '#b45309'; $badgeText = 'Diajukan';
+                            } elseif ($statusLower == 'ditolak') {
+                                $badgeBg = '#f3f4f6'; $badgeColor = '#6b7280'; $badgeText = 'Ditolak';
+                            } else {
+                                $badgeBg = '#f3f4f6'; $badgeColor = '#4b5563'; $badgeText = ucfirst($item->status);
+                            }
+                        @endphp
+                        <tr class="hover:bg-gray-50 transition" style="border-bottom:1px solid #f3f4f6;">
+                            <td class="py-4 px-5 align-top text-center text-gray-400">{{ $index + 1 }}</td>
+                            <td class="py-4 px-5 align-top">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 text-white text-xs font-bold" style="background:#0f1729;">
+                                        {{ strtoupper(substr($item->user->name ?? '-', 0, 1)) }}
+                                    </div>
+                                    <span class="font-semibold text-gray-900">{{ $item->user->name ?? '-' }}</span>
+                                </div>
+                            </td>
+                            <td class="py-4 px-5 align-top text-xs text-gray-500 whitespace-nowrap">
+                                <div><span class="text-gray-400">Pinjam:</span> {{ \Carbon\Carbon::parse($item->tgl_pinjam)->format('d M Y') }}</div>
+                                <div><span class="text-gray-400">Rencana:</span> {{ \Carbon\Carbon::parse($item->tgl_kembali_plan)->format('d M Y') }}</div>
+                            </td>
+                            <td class="py-4 px-5 align-top">
+                                <span class="px-2.5 py-1 text-[11px] font-semibold rounded-full" style="background:{{ $badgeBg }}; color:{{ $badgeColor }};">
+                                    {{ $badgeText }}
+                                </span>
+                            </td>
+                            <td class="py-4 px-5 align-top text-gray-600">
+                                <ul class="space-y-1">
+                                    @foreach($item->detailPinjams as $detail)
+                                        <li class="flex items-center gap-1.5">
+                                            <span class="w-1 h-1 rounded-full bg-gray-300 flex-shrink-0"></span>
+                                            {{ $detail->alat->nama_alat ?? '-' }} <span class="text-xs text-gray-400">({{ $detail->jumlah }})</span>
+                                        </li>
+                                    @endforeach
+                                </ul>
+                            </td>
+                            <td class="py-4 px-5 align-top">
+                                @php $denda = $item->pengembalian->denda ?? 0; @endphp
+                                <span class="text-sm font-semibold" style="color:{{ $denda > 0 ? '#dc2626' : '#9ca3af' }};">
+                                    Rp {{ number_format($denda, 0, ',', '.') }}
+                                </span>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="6" class="py-10 text-center text-gray-400 text-sm">Tidak ada data laporan yang sesuai filter.</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
     </div>
 
-    <div class="overflow-x-auto">
-        <table class="w-full text-left border-collapse">
-            <thead>
-                <tr class="bg-gray-100 text-gray-600 text-sm uppercase tracking-wider">
-                    <th class="py-3 px-4 border-b">No</th>
-                    <th class="py-3 px-4 border-b">Peminjam</th>
-                    <th class="py-3 px-4 border-b">Tgl Pinjam</th>
-                    <th class="py-3 px-4 border-b">Rencana Kembali</th>
-                    <th class="py-3 px-4 border-b">Status</th>
-                    <th class="py-3 px-4 border-b">Detail Alat</th>
-                    <th class="py-3 px-4 border-b">Denda</th>
-                </tr>
-            </thead>
-            <tbody class="text-gray-700 text-sm">
-                @forelse($laporans as $index => $item)
-                <tr class="hover:bg-gray-50 transition align-top">
-                    <td class="py-3 px-4 border-b">{{ $index + 1 }}</td>
-                    <td class="py-3 px-4 border-b font-medium text-gray-900">{{ $item->user->name ?? '-' }}</td>
-                    <td class="py-3 px-4 border-b">{{ $item->tgl_pinjam }}</td>
-                    <td class="py-3 px-4 border-b">{{ $item->tgl_kembali_plan }}</td>
-                    <td class="py-3 px-4 border-b">
-                        <span class="px-2.5 py-1 rounded text-xs font-semibold
-                            {{ $item->status == 'selesai' ? 'bg-emerald-100 text-emerald-700' : '' }}
-                            {{ $item->status == 'dipinjam' ? 'bg-blue-100 text-blue-700' : '' }}
-                            {{ $item->status == 'telat' ? 'bg-red-100 text-red-700' : '' }}
-                            {{ $item->status == 'diajukan' ? 'bg-yellow-100 text-yellow-700' : '' }}">
-                            {{ ucfirst($item->status) }}
-                        </span>
-                    </td>
-                    <td class="py-3 px-4 border-b">
-                        <ul class="list-disc list-inside space-y-1 text-xs">
-                            @foreach($item->detailPinjams as $detail)
-                                <li>{{ $detail->alat->nama_alat ?? '-' }} ({{ $detail->jumlah }})</li>
-                            @endforeach
-                        </ul>
-                    </td>
-                    <td class="py-3 px-4 border-b font-semibold">
-                        Rp {{ number_format($item->pengembalian->denda ?? 0, 0, ',', '.') }}
-                    </td>
-                </tr>
-                @empty
-                <tr>
-                    <td colspan="7" class="py-6 text-center text-gray-500">Tidak ada data laporan yang sesuai filter.</td>
-                </tr>
-                @endforelse
-            </tbody>
-        </table>
-    </div>
 </div>
 @endsection

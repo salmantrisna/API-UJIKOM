@@ -105,15 +105,24 @@ class PetugasController extends Controller
         try {
             $peminjaman = Peminjaman::with('detailPinjam')->findOrFail($pinjamanId);
 
-            // Hitung denda otomatis berdasarkan keterlambatan
-            $denda = 0;
+            // Hitung denda keterlambatan
+            $dendaTelat = 0;
             $tglPlan = Carbon::parse($peminjaman->tgl_kembali_plan)->startOfDay();
             $tglSekarang = Carbon::now()->startOfDay();
 
             if ($tglSekarang->greaterThan($tglPlan)) {
                 $hariTelat = $tglPlan->diffInDays($tglSekarang);
-                $denda = $hariTelat * 5000;
+                $dendaTelat = $hariTelat * 5000;
             }
+
+            // Hitung denda kerusakan berdasarkan kondisi kembali
+            $dendaKerusakan = match ($request->kondisi_kembali) {
+                'Rusak Ringan' => 25000,
+                'Rusak Berat' => 100000,
+                default => 0,
+            };
+
+            $denda = $dendaTelat + $dendaKerusakan;
 
             // Simpan data pengembalian
             Pengembalian::create([
@@ -145,7 +154,7 @@ class PetugasController extends Controller
             DB::commit();
 
             $pesanDenda = $denda > 0
-                ? " Denda keterlambatan: Rp " . number_format($denda, 0, ',', '.')
+                ? " Total denda: Rp " . number_format($denda, 0, ',', '.')
                 : " Tidak ada denda.";
 
             return redirect()->back()->with('success', 'Pengembalian berhasil dicatat dan stok dipulihkan.' . $pesanDenda);
