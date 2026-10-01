@@ -13,11 +13,18 @@
         </div>
     @endif
 
+    @if(session('error'))
+        <div class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm" style="background:#fee2e2; color:#dc2626;">
+            <svg class="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+            {{ session('error') }}
+        </div>
+    @endif
+
     <!-- Header + Search + Tambah -->
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
             <h2 class="text-xl font-bold text-gray-900">Daftar Pengguna Sistem</h2>
-            <p class="text-sm text-gray-400">{{ $users->total() ?? $users->count() }} pengguna terdaftar</p>
+            <p class="text-sm text-gray-400">{{ $users->total() }} pengguna terdaftar</p>
         </div>
 
         <div class="flex items-center gap-3 w-full md:w-auto">
@@ -57,13 +64,12 @@
                 <tbody class="text-sm">
                     @forelse($users as $user)
                         @php
-                            if ($user->role == 'admin') {
-                                $badgeBg = '#ede9fe'; $badgeColor = '#7c3aed';
-                            } elseif ($user->role == 'petugas') {
-                                $badgeBg = '#dbeafe'; $badgeColor = '#2563eb';
-                            } else {
-                                $badgeBg = '#dcfce7'; $badgeColor = '#166534';
-                            }
+                            [$badgeBg, $badgeColor] = match($user->role) {
+                                'admin'   => ['#ede9fe', '#7c3aed'],
+                                'petugas' => ['#dbeafe', '#2563eb'],
+                                default   => ['#dcfce7', '#166534'],
+                            };
+                            $diriSendiri = $user->id === auth()->id();
                         @endphp
                         <tr class="hover:bg-gray-50 transition" style="border-bottom:1px solid #f3f4f6;">
                             <td class="py-3 px-5">
@@ -72,6 +78,9 @@
                                         {{ strtoupper(substr($user->name, 0, 1)) }}
                                     </div>
                                     <span class="font-semibold text-gray-900">{{ $user->name }}</span>
+                                    @if($diriSendiri)
+                                        <span class="px-2 py-0.5 text-[10px] font-semibold rounded-full" style="background:#f3f4f6; color:#6b7280;">Kamu</span>
+                                    @endif
                                 </div>
                             </td>
                             <td class="py-3 px-5 text-gray-500">{{ $user->email }}</td>
@@ -88,10 +97,16 @@
                                         style="background:#fef3c7; color:#b45309;" title="Edit">
                                         <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
                                     </a>
-                                    <form action="{{ route('admin.user.destroy', $user->id) }}" method="POST" onsubmit="return confirm('Yakin ingin menghapus user ini?')">
+
+                                    <form action="{{ route('admin.user.destroy', $user->id) }}" method="POST"
+                                        onsubmit="return confirm('Yakin ingin menghapus user {{ e($user->name) }}?')">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="w-8 h-8 flex items-center justify-center rounded-full transition" style="background:#fee2e2; color:#dc2626;" title="Hapus">
+                                        <button type="submit"
+                                            class="w-8 h-8 flex items-center justify-center rounded-full transition {{ $diriSendiri ? 'opacity-40 cursor-not-allowed' : '' }}"
+                                            style="background:#fee2e2; color:#dc2626;"
+                                            title="{{ $diriSendiri ? 'Tidak bisa menghapus akun sendiri' : 'Hapus' }}"
+                                            {{ $diriSendiri ? 'disabled' : '' }}>
                                             <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg>
                                         </button>
                                     </form>

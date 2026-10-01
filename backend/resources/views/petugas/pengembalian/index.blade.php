@@ -39,33 +39,55 @@
         </form>
     </div>
 
-    <!-- List Card (bukan tabel biasa, karena tiap baris punya form sendiri) -->
+    <!-- List Card -->
     <div class="space-y-3">
         @forelse($peminjamans as $item)
             @php
-                $tglPlan = \Carbon\Carbon::parse($item->tgl_kembali_plan)->startOfDay();
+                $tglPlan = \Carbon\Carbon::parse($item->tgl_kembali_plan ?? $item->tanggal_kembali)->startOfDay();
                 $tglSekarang = \Carbon\Carbon::now()->startOfDay();
                 $hariTelat = $tglSekarang->greaterThan($tglPlan) ? $tglPlan->diffInDays($tglSekarang) : 0;
-                $dendaPreview = $hariTelat * 5000;
+                $dendaTelat = $hariTelat * 5000;
+
+                // Kalau peminjam sudah lapor kondisi, pakai itu sebagai default dropdown & hitung preview kerusakan
+                $kondisiDefault = $item->kondisi_kembali ?? 'Baik';
+                $dendaKerusakanAwal = match($kondisiDefault) {
+                    'Rusak Ringan' => 25000,
+                    'Rusak Berat' => 100000,
+                    default => 0,
+                };
+                $dendaPreview = $dendaTelat + $dendaKerusakanAwal;
             @endphp
-            <div class="rounded-2xl bg-white border border-gray-100 shadow-sm p-5">
+            <div class="rounded-2xl bg-white border p-5" style="{{ $item->status == 'menunggu_verifikasi' ? 'border-color:#f59e0b; box-shadow:0 0 0 1px #f59e0b;' : 'border-color:#f3f4f6;' }}">
                 <div class="flex flex-col lg:flex-row lg:items-start justify-between gap-5">
 
                     <!-- Info kiri -->
                     <div class="flex-1 min-w-0">
-                        <div class="flex items-center gap-3 mb-3">
+                        <div class="flex items-center gap-3 mb-3 flex-wrap">
                             <div class="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-white text-xs font-bold" style="background:#0f1729;">
                                 {{ strtoupper(substr($item->user->name ?? 'U', 0, 1)) }}
                             </div>
                             <div>
                                 <p class="font-semibold text-gray-900">{{ $item->user->name ?? 'User Dihapus' }}</p>
                                 <p class="text-xs text-gray-400">
-                                    Pinjam {{ \Carbon\Carbon::parse($item->tgl_pinjam)->format('d M Y') }} · Rencana {{ \Carbon\Carbon::parse($item->tgl_kembali_plan)->format('d M Y') }}
+                                    Pinjam {{ \Carbon\Carbon::parse($item->tgl_pinjam)->format('d M Y') }} · Rencana {{ \Carbon\Carbon::parse($item->tgl_kembali_plan ?? $item->tanggal_kembali)->format('d M Y') }}
                                 </p>
                             </div>
-                            <span class="ml-1 px-2.5 py-1 text-[11px] font-semibold rounded-full" style="{{ $item->status == 'telat' ? 'background:#fee2e2; color:#dc2626;' : 'background:#dbeafe; color:#2563eb;' }}">
-                                {{ ucfirst($item->status) }}
-                            </span>
+
+                            <!-- Badge Status -->
+                            @if($item->status == 'menunggu_verifikasi')
+                                <span class="ml-1 px-2.5 py-1 text-[11px] font-semibold rounded-full flex items-center gap-1" style="background:#fef3c7; color:#b45309;">
+                                    <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="10"/></svg>
+                                    Menunggu Verifikasi
+                                </span>
+                            @elseif($item->status == 'telat')
+                                <span class="ml-1 px-2.5 py-1 text-[11px] font-semibold rounded-full" style="background:#fee2e2; color:#dc2626;">
+                                    Telat
+                                </span>
+                            @else
+                                <span class="ml-1 px-2.5 py-1 text-[11px] font-semibold rounded-full" style="background:#dbeafe; color:#2563eb;">
+                                    Dipinjam
+                                </span>
+                            @endif
                         </div>
 
                         <ul class="space-y-1 pl-1">
@@ -77,18 +99,25 @@
                                 </li>
                             @endforeach
                         </ul>
+
+                        @if($item->status == 'menunggu_verifikasi' && $item->kondisi_kembali)
+                            <p class="text-xs mt-2 flex items-center gap-1.5" style="color:#b45309;">
+                                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01"/><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/></svg>
+                                Dilaporkan peminjam: <strong>{{ $item->kondisi_kembali }}</strong>
+                            </p>
+                        @endif
                     </div>
 
-                    <!-- Form aksi kanan -->
+                    <!-- Form Aksi Kanan -->
                     <form action="{{ route('petugas.pengembalian.proses', $item->id) }}" method="POST"
                         class="flex flex-col sm:flex-row lg:flex-col gap-3 rounded-2xl p-4 w-full lg:w-72 flex-shrink-0" style="background:#f9fafb;">
                         @csrf
                         <div class="flex-1">
                             <label class="block text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Kondisi Kembali</label>
                             <select name="kondisi_kembali" required onchange="updateDenda{{ $item->id }}()" id="kondisi-{{ $item->id }}" class="w-full text-sm border border-gray-200 rounded-full px-3 py-2 bg-white focus:outline-none focus:ring-1 focus:ring-gray-300">
-                                <option value="Baik">Baik</option>
-                                <option value="Rusak Ringan">Rusak Ringan</option>
-                                <option value="Rusak Berat">Rusak Berat</option>
+                                <option value="Baik" {{ $kondisiDefault == 'Baik' ? 'selected' : '' }}>Baik</option>
+                                <option value="Rusak Ringan" {{ $kondisiDefault == 'Rusak Ringan' ? 'selected' : '' }}>Rusak Ringan</option>
+                                <option value="Rusak Berat" {{ $kondisiDefault == 'Rusak Berat' ? 'selected' : '' }}>Rusak Berat</option>
                             </select>
                         </div>
 
@@ -107,13 +136,14 @@
                             Terima Pengembalian
                         </button>
                     </form>
+
                 </div>
             </div>
 
             <script>
                 function updateDenda{{ $item->id }}() {
                     const kondisi = document.getElementById('kondisi-{{ $item->id }}').value;
-                    const dendaTelat = {{ $dendaPreview }};
+                    const dendaTelat = {{ $dendaTelat }};
                     let dendaKerusakan = 0;
                     if (kondisi === 'Rusak Ringan') dendaKerusakan = 25000;
                     if (kondisi === 'Rusak Berat') dendaKerusakan = 100000;

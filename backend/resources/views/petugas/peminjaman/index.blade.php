@@ -53,7 +53,13 @@
                 </thead>
                 <tbody class="text-sm">
                     @forelse($peminjamans as $item)
+                        @php
+                            $st = strtolower($item->status);
+                            $menunggu = $st === 'dikembalikan' && !$item->pengembalian;
+                        @endphp
                         <tr class="hover:bg-gray-50 transition" style="border-bottom:1px solid #f3f4f6;">
+
+                            {{-- Peminjam --}}
                             <td class="py-4 px-5 align-top">
                                 <div class="flex items-center gap-3">
                                     <div class="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-white text-xs font-bold" style="background:#0f1729;">
@@ -63,11 +69,13 @@
                                 </div>
                             </td>
 
+                            {{-- Tanggal --}}
                             <td class="py-4 px-5 align-top text-xs text-gray-500 whitespace-nowrap">
                                 <div><span class="text-gray-400">Pinjam:</span> {{ \Carbon\Carbon::parse($item->tgl_pinjam)->format('d M Y') }}</div>
                                 <div><span class="text-gray-400">Rencana:</span> {{ \Carbon\Carbon::parse($item->tgl_kembali_plan)->format('d M Y') }}</div>
                             </td>
 
+                            {{-- Detail Alat --}}
                             <td class="py-4 px-5 align-top text-gray-600">
                                 <ul class="space-y-1">
                                     @foreach($item->detailPinjam as $detail)
@@ -80,8 +88,9 @@
                                 </ul>
                             </td>
 
+                            {{-- Aksi --}}
                             <td class="py-4 px-5 align-top">
-                                @if(strtolower($item->status) == 'diajukan')
+                                @if($st === 'diajukan')
                                     <div class="flex items-center justify-end gap-2">
                                         <form action="{{ route('petugas.peminjaman.setujui', $item->id) }}" method="POST">
                                             @csrf
@@ -102,11 +111,49 @@
                                             </button>
                                         </form>
                                     </div>
+
+                                @elseif($menunggu)
+                                    <div class="flex flex-col items-end gap-2">
+                                        <span class="px-2.5 py-1 text-[11px] font-semibold rounded-full" style="background:#f3e8ff; color:#7e22ce;">Menunggu Verifikasi</span>
+
+                                        <div class="flex items-center gap-2">
+                                            <form action="{{ route('petugas.pengembalian.proses', $item->id) }}" method="POST" class="flex items-center gap-2">
+                                                @csrf
+                                                <select name="kondisi_kembali" required class="border border-gray-200 rounded-full px-3 py-1.5 text-xs bg-white text-gray-600 focus:outline-none">
+                                                    <option value="Baik">Baik</option>
+                                                    <option value="Rusak Ringan">Rusak Ringan</option>
+                                                    <option value="Rusak Berat">Rusak Berat</option>
+                                                </select>
+                                                <button type="submit" onclick="return confirm('Setujui pengembalian alat ini?')"
+                                                    class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition" style="background:#dcfce7; color:#166534;">
+                                                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                                                    Setujui
+                                                </button>
+                                            </form>
+
+                                            <form action="{{ route('petugas.pengembalian.tolak', $item->id) }}" method="POST">
+                                                @csrf
+                                                <button type="submit" onclick="return confirm('Tolak pengajuan pengembalian ini? Alat dianggap belum diserahkan.')"
+                                                    class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition" style="background:#fee2e2; color:#dc2626;">
+                                                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                                                    Tolak
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+
                                 @else
+                                    @php
+                                        [$bg, $fg, $label] = match(true) {
+                                            $st === 'dipinjam'                         => ['#dbeafe', '#2563eb', 'Dipinjam'],
+                                            $st === 'telat'                            => ['#fee2e2', '#dc2626', 'Telat'],
+                                            in_array($st, ['dikembalikan', 'selesai']) => ['#dcfce7', '#166534', 'Selesai'],
+                                            $st === 'ditolak'                          => ['#f3f4f6', '#4b5563', 'Ditolak'],
+                                            default                                    => ['#f3f4f6', '#4b5563', ucfirst($item->status)],
+                                        };
+                                    @endphp
                                     <div class="flex justify-end">
-                                        <span class="px-2.5 py-1 text-[11px] font-semibold rounded-full" style="background:#dbeafe; color:#2563eb;">
-                                            {{ ucfirst($item->status) }}
-                                        </span>
+                                        <span class="px-2.5 py-1 text-[11px] font-semibold rounded-full" style="background:{{ $bg }}; color:{{ $fg }};">{{ $label }}</span>
                                     </div>
                                 @endif
                             </td>

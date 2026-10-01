@@ -8,35 +8,19 @@ use App\Models\Alat;
 use App\Models\LogAktivitas;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 use Exception;
 
 class PetugasController extends Controller
 {
-    // Menampilkan daftar pengajuan peminjaman dari siswa/peminjam dengan fitur pencarian
+    // Menampilkan daftar pengajuan peminjaman (status: diajukan) yang perlu disetujui/ditolak
     public function indexPeminjaman(Request $request)
     {
         $search = $request->input('search');
 
         $peminjamans = Peminjaman::with(['user', 'detailPinjam.alat'])
-            ->when($search, function ($query, $search) {
-                return $query->whereHas('user', function ($q) use ($search) {
-                    $q->where('name', 'like', "%{$search}%");
-                })->orWhere('status', 'like', "%{$search}%");
-            })
-            ->latest()
-            ->get();
-
-        return view('petugas.peminjaman.index', compact('peminjamans', 'search'));
-    }
-
-    // Menampilkan daftar alat yang sedang dipinjam/telat untuk dimantau
-    public function indexPengembalian(Request $request)
-    {
-        $search = $request->input('search');
-
-        $peminjamans = Peminjaman::with(['user', 'detailPinjam.alat', 'pengembalian'])
-            ->whereIn('status', ['dipinjam', 'telat'])
+            ->where('status', 'diajukan')
             ->when($search, function ($query, $search) {
                 return $query->whereHas('user', function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%");
@@ -45,9 +29,27 @@ class PetugasController extends Controller
             ->latest()
             ->get();
 
-        return view('petugas.pengembalian.index', compact('peminjamans', 'search'));
+        return view('petugas.peminjaman.index', compact('peminjamans', 'search'));
     }
 
+    // Menampilkan daftar alat yang sedang dipinjam/telat/menunggu verifikasi untuk dimantau
+   public function indexPengembalian(Request $request)
+{
+    $search = $request->input('search');
+
+    $peminjamans = Peminjaman::with(['user', 'detailPinjam.alat', 'pengembalian'])
+        ->whereIn('status', ['dipinjam', 'telat', 'menunggu_verifikasi'])
+        ->when($search, function ($query, $search) {
+            return $query->whereHas('user', function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%");
+            });
+        })
+        ->orderByRaw("FIELD(status, 'menunggu_verifikasi', 'telat', 'dipinjam')")
+        ->latest()
+        ->get();
+
+    return view('petugas.pengembalian.index', compact('peminjamans', 'search'));
+}
     // Menyetujui atau menolak peminjaman
     public function setujuiPeminjaman(Request $request, $id)
     {

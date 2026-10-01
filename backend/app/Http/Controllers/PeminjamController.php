@@ -3,30 +3,26 @@
 namespace App\Http\Controllers;
 
 use App\Models\Alat;
-use App\Models\Kategori;
-use App\Models\Peminjaman;
 use App\Models\DetailPinjam;
+use App\Models\Kategori;
 use App\Models\LogAktivitas;
+use App\Models\Peminjaman;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class PeminjamController extends Controller
 {
-    // Menampilkan katalog alat yang tersedia untuk dipinjam
+    // Katalog: semua alat tampil, yang stoknya habis ditaruh paling bawah
     public function katalogAlat(Request $request)
     {
         $search = $request->input('search');
         $kategori_id = $request->input('kategori_id');
 
         $alats = Alat::with('kategori')
-            ->tersedia()
-            ->when($search, function ($query, $search) {
-                return $query->where('nama_alat', 'like', "%{$search}%");
-            })
-            ->when($kategori_id, function ($query, $kategori_id) {
-                return $query->where('kategori_id', $kategori_id);
-            })
+            ->when($search, fn ($q) => $q->where('nama_alat', 'like', "%{$search}%"))
+            ->when($kategori_id, fn ($q) => $q->where('kategori_id', $kategori_id))
+            ->orderByRaw('stok < 1')
             ->orderBy('nama_alat')
             ->get();
 
@@ -35,59 +31,68 @@ class PeminjamController extends Controller
         return view('peminjam.katalog', compact('alats', 'kategoris', 'search', 'kategori_id'));
     }
 
-    // Memproses pengajuan peminjaman (bisa banyak alat sekaligus)
+    // Pengajuan peminjaman (banyak alat sekaligus)
     public function ajukanPeminjaman(Request $request)
     {
         $request->validate([
-            'tgl_pinjam' => 'required|date',
+            'tgl_pinjam'       => 'required|date',
             'tgl_kembali_plan' => 'required|date|after_or_equal:tgl_pinjam',
-            'alat_id' => 'required|array|min:1',
-            'alat_id.*' => 'exists:alat,id',
-            'jumlah' => 'required|array',
-            'jumlah.*' => 'integer|min:1',
+            'alat_id'          => 'required|array|min:1',
+            'alat_id.*'        => 'distinct|exists:alat,id',
+            'jumlah'           => 'required|array|size:' . count((array) $request->alat_id),
+            'jumlah.*'         => 'integer|min:1',
         ], [
             'alat_id.required' => 'Pilih minimal satu alat untuk diajukan.',
+            'alat_id.*.distinct' => 'Ada alat yang dipilih dua kali.',
         ]);
 
-        DB::beginTransaction();
         try {
-            $peminjaman = Peminjaman::create([
-                'user_id' => Auth::id(),
-                'tgl_pinjam' => $request->tgl_pinjam,
-                'tgl_kembali_plan' => $request->tgl_kembali_plan,
-                'status' => 'diajukan',
-            ]);
+            DB::transaction(function () use ($request) {
+                $peminjaman = Peminjaman::create([
+                    'user_id'          => Auth::id(),
+                    'tgl_pinjam'       => $request->tgl_pinjam,
+                    'tgl_kembali_plan' => $request->tgl_kembali_plan,
+                    'status'           => 'diajukan',
+                ]);
 
-            foreach ($request->alat_id as $index => $alatId) {
-                $jumlah = $request->jumlah[$index] ?? 1;
-                $alat = Alat::findOrFail($alatId);
+                foreach ($request->alat_id as $index => $alatId) {
+                    $jumlah = (int) ($request->jumlah[$index] ?? 1);
 
-                if ($alat->stok < $jumlah) {
-                    throw new \Exception("Stok {$alat->nama_alat} tidak mencukupi (tersisa {$alat->stok}).");
+                    // Cek stok di sisi server (max di HTML bisa diakali lewat browser)
+                    $alat = Alat::lockForUpdate()->findOrFail($alatId);
+
+                    if ($alat->stok < 1) {
+                        throw new \RuntimeException("Stok {$alat->nama_alat} sedang habis.");
+                    }
+                    if ($alat->stok < $jumlah) {
+                        throw new \RuntimeException("Stok {$alat->nama_alat} tidak mencukupi (tersisa {$alat->stok}).");
+                    }
+
+                    DetailPinjam::create([
+                        'peminjaman_id' => $peminjaman->id,
+                        'alat_id'       => $alatId,
+                        'jumlah'        => $jumlah,
+                    ]);
                 }
 
-                DetailPinjam::create([
-                    'peminjaman_id' => $peminjaman->id,
-                    'alat_id' => $alatId,
-                    'jumlah' => $jumlah,
+                LogAktivitas::create([
+                    'user_id'   => Auth::id(),
+                    'aktivitas' => 'Mengajukan peminjaman baru (ID: ' . $peminjaman->id . ')',
                 ]);
-            }
-
-            LogAktivitas::create([
-                'user_id'   => Auth::id(),
-                'aktivitas' => 'Mengajukan peminjaman baru (ID: ' . $peminjaman->id . ')',
-            ]);
-
-            DB::commit();
-            return redirect()->route('peminjam.riwayat')->with('success', 'Pengajuan peminjaman berhasil dikirim, menunggu persetujuan petugas.');
-        } catch (\Exception $e) {
-            DB::rollback();
-            return redirect()->back()->with('error', 'Gagal mengajukan peminjaman: ' . $e->getMessage());
+            });
+        } catch (\RuntimeException $e) {
+            return redirect()->back()->withInput()->with('error', 'Gagal mengajukan peminjaman: ' . $e->getMessage());
+        } catch (\Throwable $e) {
+            report($e);
+            return redirect()->back()->withInput()->with('error', 'Terjadi kesalahan saat mengajukan peminjaman. Coba lagi.');
         }
+
+        return redirect()->route('peminjam.riwayat')
+            ->with('success', 'Pengajuan peminjaman berhasil dikirim, menunggu persetujuan petugas.');
     }
 
-    // Menampilkan riwayat peminjaman milik user yang login
-    public function riwayatPeminjaman(Request $request)
+    // Riwayat peminjaman milik user yang login
+    public function riwayatPeminjaman()
     {
         $peminjamans = Peminjaman::with(['detailPinjam.alat', 'pengembalian'])
             ->where('user_id', Auth::id())
@@ -97,22 +102,29 @@ class PeminjamController extends Controller
         return view('peminjam.riwayat', compact('peminjamans'));
     }
 
-    // Peminjam menandai bahwa alat sudah dikembalikan secara fisik (menunggu verifikasi petugas)
-    public function ajukanPengembalian($id)
-    {
-        $peminjaman = Peminjaman::where('user_id', Auth::id())->findOrFail($id);
+    // Peminjam menandai alat sudah dikembalikan secara fisik (menunggu verifikasi petugas)
+    public function ajukanPengembalian(Request $request, $id)
+{
+    $request->validate([
+        'kondisi_kembali' => 'required|in:Baik,Rusak Ringan,Rusak Berat',
+    ]);
 
-        if (!in_array($peminjaman->status, ['dipinjam', 'telat'])) {
-            return redirect()->back()->with('error', 'Peminjaman ini tidak bisa diajukan pengembalian.');
-        }
+    $peminjaman = Peminjaman::where('user_id', Auth::id())->findOrFail($id);
 
-        $peminjaman->update(['status' => 'dikembalikan']);
-
-        LogAktivitas::create([
-            'user_id'   => Auth::id(),
-            'aktivitas' => 'Mengajukan pengembalian untuk peminjaman ID: ' . $peminjaman->id,
-        ]);
-
-        return redirect()->back()->with('success', 'Pengembalian diajukan, menunggu verifikasi petugas.');
+    if (!in_array($peminjaman->status, ['dipinjam', 'telat'])) {
+        return redirect()->back()->with('error', 'Peminjaman ini tidak bisa diajukan pengembalian.');
     }
+
+    $peminjaman->update([
+        'status' => 'menunggu_verifikasi',
+        'kondisi_kembali' => $request->kondisi_kembali,
+    ]);
+
+    LogAktivitas::create([
+        'user_id'   => Auth::id(),
+        'aktivitas' => 'Mengajukan pengembalian untuk peminjaman ID: ' . $peminjaman->id,
+    ]);
+
+    return redirect()->back()->with('success', 'Pengajuan pengembalian berhasil dikirim.');
+}
 }

@@ -87,7 +87,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/peminjaman', [PetugasController::class, 'indexPeminjaman'])->name('peminjaman.index');
         Route::post('/peminjaman/{id}/setujui', [PetugasController::class, 'setujuiPeminjaman'])->name('peminjaman.setujui');
 
-        // Pengembalian & Denda
+        // Pengembalian, Denda & Penolakan (Sudah dipindah ke dalam group agar namanya menjadi petugas.pengembalian.tolak)
+        Route::post('/pengembalian/{id}/tolak', [PetugasController::class, 'tolakPengembalian'])->name('pengembalian.tolak');
         Route::post('/pengembalian/{id}', [PetugasController::class, 'prosesPengembalian'])->name('pengembalian.proses');
         Route::get('/pengembalian', [PetugasController::class, 'indexPengembalian'])->name('pengembalian.index');
 
