@@ -621,8 +621,16 @@ class AdminController extends Controller
         return redirect()->route('admin.pengembalian.index')->with('success', 'Data pengembalian berhasil diperbarui!');
     }
 
-    public function destroyPengembalian($id)
-    {
-        return $this->hapusPeminjaman($id, 'pengembalian', 'admin.pengembalian.index');
+   public function destroyPengembalian($id)
+{
+    $peminjaman = Peminjaman::findOrFail($id);
+
+    // Transaksi yang masih berjalan tidak boleh dihapus
+    if (in_array(strtolower($peminjaman->status), ['diajukan', 'dipinjam', 'telat', 'menunggu_verifikasi'])) {
+        return redirect()->route('admin.pengembalian.index')
+            ->with('error', 'Data tidak bisa dihapus karena alat masih dipinjam. Proses pengembaliannya dulu.');
     }
+
+    return $this->hapusPeminjaman($id, 'pengembalian', 'admin.pengembalian.index');
+}
 }

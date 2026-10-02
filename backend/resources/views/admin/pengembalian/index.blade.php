@@ -12,6 +12,13 @@
         </div>
     @endif
 
+    @if(session('error'))
+        <div class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm" style="background:#fee2e2; color:#dc2626;">
+            <svg class="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+            {{ session('error') }}
+        </div>
+    @endif
+
     <!-- Header + Search + Tambah -->
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
@@ -59,6 +66,9 @@
                     @forelse($peminjamans as $peminjaman)
                         @php
                             $statusLower = strtolower($peminjaman->status);
+
+                            // Transaksi yang masih berjalan tidak boleh dihapus
+                            $masihDipinjam = in_array($statusLower, ['diajukan', 'dipinjam', 'telat', 'menunggu_verifikasi']);
 
                             if (in_array($statusLower, ['dikembalikan', 'selesai']) && $peminjaman->pengembalian) {
                                 $denda = $peminjaman->pengembalian->denda ?? 0;
@@ -133,13 +143,21 @@
                                         style="background:#fef3c7; color:#b45309;" title="Edit">
                                         <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>
                                     </a>
-                                    <form action="{{ route('admin.pengembalian.destroy', $peminjaman->id) }}" method="POST" onsubmit="return confirm('Yakin ingin menghapus data ini?')">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="w-8 h-8 flex items-center justify-center rounded-full transition" style="background:#fee2e2; color:#dc2626;" title="Hapus">
+
+                                    @if($masihDipinjam)
+                                        <span class="w-8 h-8 flex items-center justify-center rounded-full cursor-not-allowed"
+                                            style="background:#f3f4f6; color:#9ca3af;" title="Tidak bisa dihapus, alat masih dipinjam">
                                             <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg>
-                                        </button>
-                                    </form>
+                                        </span>
+                                    @else
+                                        <form action="{{ route('admin.pengembalian.destroy', $peminjaman->id) }}" method="POST" onsubmit="return confirm('Yakin ingin menghapus data ini?')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="w-8 h-8 flex items-center justify-center rounded-full transition" style="background:#fee2e2; color:#dc2626;" title="Hapus">
+                                                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0-1 14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2L4 6"/></svg>
+                                            </button>
+                                        </form>
+                                    @endif
                                 </div>
                             </td>
                         </tr>

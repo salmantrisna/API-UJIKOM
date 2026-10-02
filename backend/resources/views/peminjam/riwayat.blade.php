@@ -20,15 +20,25 @@
     @endif
 
     <div>
-        <h2 class="text-xl font-bold text-white">Riwayat Peminjaman</h2>
-        <p class="text-sm text-slate-500">{{ $peminjamans->count() }} peminjaman tercatat</p>
+        <h2 class="text-xl font-bold text-gray-900">Riwayat Peminjaman</h2>
+        <p class="text-sm text-gray-400">{{ $peminjamans->count() }} peminjaman tercatat</p>
+    </div>
+
+    <!-- Aturan denda -->
+    <div class="rounded-2xl p-4 text-sm" style="background:#fffbeb; border:1px solid #fde68a; color:#92400e;">
+        <p class="font-semibold mb-1">Aturan Denda</p>
+        <div class="flex flex-wrap gap-x-5 gap-y-1 text-xs">
+            <span>Terlambat: Rp 5.000 / hari</span>
+            <span>Rusak Ringan: Rp 25.000</span>
+            <span>Rusak Berat: Rp 100.000</span>
+        </div>
     </div>
 
     <div class="space-y-3">
         @forelse($peminjamans as $item)
             @php
                 $sudahKembali = (bool) $item->pengembalian;
-                $statusKey = $sudahKembali ? 'selesai' : $item->status;
+                $statusKey = ($sudahKembali || in_array($item->status, ['dikembalikan', 'selesai'])) ? 'selesai' : $item->status;
 
                 $badge = match($statusKey) {
                     'diajukan'             => ['background:#fef9c3; color:#a16207;', 'Menunggu Persetujuan'],
@@ -36,7 +46,7 @@
                     'telat'                => ['background:#fee2e2; color:#dc2626;', 'Telat Dikembalikan'],
                     'menunggu_verifikasi'  => ['background:#f3e8ff; color:#7e22ce;', 'Menunggu Verifikasi'],
                     'ditolak'              => ['background:#f3f4f6; color:#6b7280;', 'Ditolak'],
-                    'selesai'              => ['background:#dcfce7; color:#166534;', 'Selesai'],
+                    'selesai'              => ['background:#dcfce7; color:#166534;', 'Dikembalikan'],
                     default                => ['background:#f3f4f6; color:#4b5563;', ucfirst($item->status)],
                 };
 
@@ -55,7 +65,7 @@
                             {{ \Carbon\Carbon::parse($item->tgl_pinjam)->format('d M Y') }} — {{ $tglPlan->format('d M Y') }}
                         </p>
                     </div>
-                    <span class="text-[11px] font-semibold px-2.5 py-1 rounded-full flex-shrink-0" style="{{ $badge[0] }}">
+                    <span class="text-[11px] font-semibold px-2.5 py-1 rounded-full flex-shrink-0 whitespace-nowrap" style="{{ $badge[0] }}">
                         {{ $badge[1] }}
                     </span>
                 </div>
@@ -88,23 +98,23 @@
                         </div>
                     </div>
                 @elseif(in_array($item->status, ['dipinjam', 'telat']))
-                    @if($hariTelat > 0)
-                        <div class="rounded-xl p-3 mb-4 text-sm flex justify-between" style="background:#fef2f2;">
-                            <span style="color:#dc2626;">Terlambat {{ $hariTelat }} hari · estimasi denda</span>
-                            <span class="font-semibold" style="color:#dc2626;">Rp {{ number_format($dendaEstimasi, 0, ',', '.') }}</span>
-                        </div>
-                    @else
-                        @php $sisa = $tglSekarang->diffInDays($tglPlan); @endphp
-                        <div class="rounded-xl p-3 mb-4 text-sm flex justify-between" style="background:#f9fafb;">
-                            <span class="text-gray-500">
-                                Denda keterlambatan
+                    @php $sisa = $tglSekarang->diffInDays($tglPlan); @endphp
+                    <div class="rounded-xl p-3 mb-4 text-sm flex justify-between gap-3" style="background:{{ $hariTelat > 0 ? '#fef2f2' : '#f9fafb' }};">
+                        <span style="color:{{ $hariTelat > 0 ? '#dc2626' : '#6b7280' }};">
+                            @if($hariTelat > 0)
+                                Terlambat {{ $hariTelat }} hari · estimasi denda
+                            @else
+                                Estimasi denda
                                 <span class="text-xs text-gray-400">
                                     ({{ $sisa == 0 ? 'batas kembali hari ini' : 'sisa ' . $sisa . ' hari' }})
                                 </span>
-                            </span>
-                            <span class="font-semibold text-gray-500">Rp 0</span>
-                        </div>
-                    @endif
+                            @endif
+                            <span id="ket-{{ $item->id }}" class="text-xs"></span>
+                        </span>
+                        <span id="denda-{{ $item->id }}" class="font-semibold whitespace-nowrap" style="color:{{ $dendaEstimasi > 0 ? '#dc2626' : '#6b7280' }};">
+                            Rp {{ number_format($dendaEstimasi, 0, ',', '.') }}
+                        </span>
+                    </div>
                 @elseif($item->status === 'menunggu_verifikasi')
                     <div class="rounded-xl p-3 mb-4 text-sm space-y-1" style="background:#f9fafb;">
                         <div class="flex justify-between">
@@ -120,7 +130,9 @@
                         @csrf
                         <div>
                             <label class="block text-[11px] font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Kondisi Alat Saat Dikembalikan</label>
-                            <select name="kondisi_kembali" required class="w-full text-sm border border-gray-200 rounded-full px-4 py-2.5 bg-white focus:outline-none focus:ring-1 focus:ring-gray-300">
+                            <select name="kondisi_kembali" required
+                                data-id="{{ $item->id }}" data-telat="{{ $dendaEstimasi }}" onchange="hitungDenda(this)"
+                                class="w-full text-sm border border-gray-200 rounded-full px-4 py-2.5 bg-white focus:outline-none focus:ring-1 focus:ring-gray-300">
                                 <option value="Baik">Baik</option>
                                 <option value="Rusak Ringan">Rusak Ringan</option>
                                 <option value="Rusak Berat">Rusak Berat</option>
@@ -147,4 +159,28 @@
     </div>
 
 </div>
+
+<script>
+    // Hitung ulang estimasi denda saat kondisi alat diganti
+    function hitungDenda(select) {
+        const id = select.dataset.id;
+        const dendaTelat = parseInt(select.dataset.telat) || 0;
+        let dendaRusak = 0;
+        let ket = '';
+
+        if (select.value === 'Rusak Ringan') {
+            dendaRusak = 25000;
+            ket = ' + Rp 25.000 (Rusak Ringan)';
+        } else if (select.value === 'Rusak Berat') {
+            dendaRusak = 100000;
+            ket = ' + Rp 100.000 (Rusak Berat)';
+        }
+
+        const total = dendaTelat + dendaRusak;
+        const el = document.getElementById('denda-' + id);
+        el.textContent = 'Rp ' + total.toLocaleString('id-ID');
+        el.style.color = total > 0 ? '#dc2626' : '#6b7280';
+        document.getElementById('ket-' + id).textContent = ket;
+    }
+</script>
 @endsection
