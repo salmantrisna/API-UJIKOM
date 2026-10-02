@@ -43,6 +43,27 @@
         </form>
     </div>
 
+    <!-- Ringkasan -->
+    @php
+        $totalTransaksi = $laporans->count();
+        $totalDenda = $laporans->sum(fn($item) => $item->pengembalian->denda ?? 0);
+        $totalDikembalikan = $laporans->whereIn('status', ['dikembalikan', 'selesai'])->count();
+    @endphp
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="rounded-2xl bg-white border border-gray-100 shadow-sm p-5">
+            <p class="text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Total Transaksi</p>
+            <p class="text-2xl font-bold text-gray-900">{{ $totalTransaksi }}</p>
+        </div>
+        <div class="rounded-2xl bg-white border border-gray-100 shadow-sm p-5">
+            <p class="text-[11px] font-semibold text-gray-400 uppercase tracking-wide mb-1">Sudah Dikembalikan</p>
+            <p class="text-2xl font-bold text-gray-900">{{ $totalDikembalikan }}</p>
+        </div>
+        <div class="rounded-2xl p-5" style="background:#0f1729;">
+            <p class="text-[11px] font-semibold uppercase tracking-wide mb-1" style="color:#f2a93b;">Total Pemasukan Denda</p>
+            <p class="text-2xl font-bold text-white">Rp {{ number_format($totalDenda, 0, ',', '.') }}</p>
+        </div>
+    </div>
+
     <!-- Hasil -->
     <div class="rounded-2xl bg-white border border-gray-100 shadow-sm overflow-hidden">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-5 py-4" style="border-bottom:1px solid #f3f4f6;">
