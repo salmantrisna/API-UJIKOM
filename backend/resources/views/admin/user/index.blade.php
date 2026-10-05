@@ -20,6 +20,16 @@
         </div>
     @endif
 
+    @php
+        $jumlahPending = \App\Models\User::whereNotNull('reset_requested_at')->count();
+    @endphp
+    @if($jumlahPending > 0)
+        <div class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm" style="background:#fef3c7; color:#b45309;">
+            <svg class="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01"/><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"/></svg>
+            Ada {{ $jumlahPending }} permintaan reset kata sandi yang menunggu ditindaklanjuti.
+        </div>
+    @endif
+
     <!-- Header + Search + Tambah -->
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
@@ -70,8 +80,9 @@
                                 default   => ['#dcfce7', '#166534'],
                             };
                             $diriSendiri = $user->id === auth()->id();
+                            $adaPermintaanReset = !is_null($user->reset_requested_at);
                         @endphp
-                        <tr class="hover:bg-gray-50 transition" style="border-bottom:1px solid #f3f4f6;">
+                        <tr class="hover:bg-gray-50 transition" style="border-bottom:1px solid #f3f4f6; {{ $adaPermintaanReset ? 'background:#fffbeb;' : '' }}">
                             <td class="py-3 px-5">
                                 <div class="flex items-center gap-3">
                                     <div class="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-white text-xs font-bold" style="background:#0f1729;">
@@ -80,6 +91,12 @@
                                     <span class="font-semibold text-gray-900">{{ $user->name }}</span>
                                     @if($diriSendiri)
                                         <span class="px-2 py-0.5 text-[10px] font-semibold rounded-full" style="background:#f3f4f6; color:#6b7280;">Kamu</span>
+                                    @endif
+                                    @if($adaPermintaanReset)
+                                        <span class="flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold rounded-full" style="background:#fef3c7; color:#b45309;" title="Mengajukan reset {{ $user->reset_requested_at->diffForHumans() }}">
+                                            <svg class="w-2.5 h-2.5" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="12"/></svg>
+                                            Minta Reset
+                                        </span>
                                     @endif
                                 </div>
                             </td>

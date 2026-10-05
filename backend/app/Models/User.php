@@ -14,7 +14,7 @@ class User extends Authenticatable
     protected $table = 'users';
 
     protected $fillable = [
-        'name', 'email', 'password', 'role', 'no_hp', 'alamat', 'foto_profile'
+        'name', 'email', 'password', 'role', 'no_hp', 'alamat', 'foto_profile', 'reset_requested_at'
     ];
 
     protected $hidden = [
@@ -26,6 +26,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'reset_requested_at' => 'datetime',
         ];
     }
 

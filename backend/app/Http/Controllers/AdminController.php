@@ -140,27 +140,28 @@ class AdminController extends Controller
     }
 
     public function updateUser(Request $request, $id)
-    {
-        $user = User::findOrFail($id);
+{
+    $user = User::findOrFail($id);
 
-        $request->validate([
-            'name'  => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users,email,' . $id,
-            'role'  => 'required|in:admin,petugas,peminjam',
-        ]);
+    $request->validate([
+        'name'  => 'required|string|max:255',
+        'email' => 'required|string|email|max:255|unique:users,email,' . $id,
+        'role'  => 'required|in:admin,petugas,peminjam',
+    ]);
 
-        $data = $request->only(['name', 'email', 'role', 'no_hp']);
+    $data = $request->only(['name', 'email', 'role', 'no_hp']);
 
-        if ($request->filled('password')) {
-            $data['password'] = Hash::make($request->password);
-        }
-
-        $user->update($data);
-
-        $this->catat('Memperbarui data user: ' . $user->name);
-
-        return redirect()->route('admin.user.index')->with('success', 'Data user berhasil diperbarui.');
+    if ($request->filled('password')) {
+        $data['password'] = Hash::make($request->password);
+        $data['reset_requested_at'] = null; // Password baru diset, selesaikan permintaan reset
     }
+
+    $user->update($data);
+
+    $this->catat('Memperbarui data user: ' . $user->name);
+
+    return redirect()->route('admin.user.index')->with('success', 'Data user berhasil diperbarui.');
+}
 
     public function destroyUser($id)
     {

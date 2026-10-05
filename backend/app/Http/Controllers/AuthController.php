@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -48,4 +49,30 @@ class AuthController extends Controller
 
         return redirect()->route('login');
     }
-} 
+
+    // Menampilkan form "Lupa Kata Sandi"
+    public function formLupaPassword()
+    {
+        return view('auth.lupa-password');
+    }
+
+    // Memproses permintaan reset password (dicatat, nanti ditindaklanjuti admin)
+    public function ajukanResetPassword(Request $request)
+    {
+        $request->validate([
+            'email' => ['required', 'email'],
+        ]);
+
+        $user = User::where('email', $request->email)->first();
+
+        if (!$user) {
+            return back()->withInput()->with('error', 'Email tersebut tidak terdaftar di sistem.');
+        }
+
+        $user->update([
+            'reset_requested_at' => now(),
+        ]);
+
+        return back()->with('success', 'Permintaan reset kata sandi berhasil dikirim. Admin akan segera menghubungimu.');
+    }
+}

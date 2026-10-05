@@ -289,10 +289,13 @@
                         </button>
                     </div>
                 </div>
-
-                <div class="row-between">
-                    <label class="remember"><input type="checkbox" id="remember" name="remember"> Ingat saya</label>
-                </div>
+                
+<div class="row-between">
+    <label class="remember"><input type="checkbox" id="remember" name="remember"> Ingat saya</label>
+    <a href="{{ route('password.lupa') }}" style="font-size: 13px; color: var(--amber); text-decoration: none; font-weight: 500;">
+        Lupa kata sandi?
+    </a>
+</div>
 
                 <button type="submit" class="submit">
                     <span>Masuk</span>

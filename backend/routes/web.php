@@ -17,6 +17,8 @@ Route::get('/', function () {
     return redirect()->route('login');
 });
 
+Route::get('/lupa-password', [AuthController::class, 'formLupaPassword'])->name('password.lupa');
+Route::post('/lupa-password', [AuthController::class, 'ajukanResetPassword'])->name('password.ajukan');
 // ==========================================
 // 1. ROUTE GUEST (Belum Login)
 // ==========================================
