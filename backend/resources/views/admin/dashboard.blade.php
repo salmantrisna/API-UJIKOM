@@ -84,31 +84,34 @@
 
         <div class="space-y-2">
             @forelse($logs ?? [] as $log)
-                @php
-                    // Ambil 2-3 kata pertama untuk mendeteksi jenis aktivitas
-                    $awalKalimat = strtolower(implode(' ', array_slice(explode(' ', $log->aktivitas), 0, 3)));
+               @php
+    // Ambil beberapa kata pertama untuk mendeteksi jenis aktivitas
+    $awalKalimat = strtolower(implode(' ', array_slice(explode(' ', $log->aktivitas), 0, 3)));
 
-                    if (str_contains($awalKalimat, 'hapus') || str_contains($awalKalimat, 'memverifikasi pengembalian') || str_contains($awalKalimat, 'menolak')) {
-                        $badgeBg = '#fee2e2'; 
-                        $badgeColor = '#dc2626'; 
-                        $badgeText = 'Return/Delete';
-                    } elseif (str_contains($awalKalimat, 'menyetujui') || str_contains($awalKalimat, 'menambahkan')) {
-                        $badgeBg = '#dcfce7'; 
-                        $badgeColor = '#16a34a'; 
-                        $badgeText = 'Approve/Add';
-                    } elseif (str_contains($awalKalimat, 'membuat') || str_contains($awalKalimat, 'mengajukan')) {
-                        $badgeBg = '#fef3c7'; 
-                        $badgeColor = '#d97706'; 
-                        $badgeText = 'Request';
-                    } else {
-                        $badgeBg = '#dbeafe'; 
-                        $badgeColor = '#3b82f6'; 
-                        $badgeText = 'Action';
-                    }
+    if (str_contains($awalKalimat, 'hapus') || str_contains($awalKalimat, 'memverifikasi pengembalian') || str_contains($awalKalimat, 'menolak')) {
+        $badgeBg = '#fee2e2'; 
+        $badgeColor = '#dc2626'; 
+        $badgeText = 'Return/Delete';
+    } elseif (str_contains($awalKalimat, 'menyetujui') || str_contains($awalKalimat, 'menambahkan') || str_contains($awalKalimat, 'setuju')) {
+        $badgeBg = '#dcfce7'; 
+        $badgeColor = '#16a34a'; // Warna teks hijau (green-600)
+        $badgeText = 'APPROVE/ADD';
+    } elseif (str_contains($awalKalimat, 'memperbarui') || str_contains($awalKalimat, 'update') || str_contains($awalKalimat, 'import')) {
+        $badgeBg = '#dbeafe'; 
+        $badgeColor = '#2563eb'; 
+        $badgeText = 'IMPORT/UPDATE';
+    } elseif (str_contains($awalKalimat, 'membuat') || str_contains($awalKalimat, 'mengajukan')) {
+        $badgeBg = '#fef3c7'; 
+        $badgeColor = '#d97706'; 
+        $badgeText = 'Request';
+    } else {
+        $badgeBg = '#f3f4f6'; 
+        $badgeColor = '#4b5563'; 
+        $badgeText = 'Action';
+    }
 
-                    $initial = strtoupper(substr($log->user->name ?? 'S', 0, 1));
-                @endphp
-
+    $initial = strtoupper(substr($log->user->name ?? 'S', 0, 1));
+@endphp
                 <div class="flex items-center gap-4 rounded-full px-4 py-2.5 hover:bg-gray-50 transition" style="background:#f9fafb;">
                     <div class="w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 text-white text-xs font-bold" style="background:#0f1729;">
                         {{ $initial }}
